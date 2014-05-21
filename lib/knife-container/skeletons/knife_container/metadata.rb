@@ -1,0 +1,7 @@
+name             'knife_container'
+maintainer       'Chef Software, Inc.'
+maintainer_email 'dev@getchef.com'
+license          'Apache 2 License'
+description      'Generates Chef code for knife-container'
+long_description 'Generates Chef code for knife-container'
+version          '0.1.0'
