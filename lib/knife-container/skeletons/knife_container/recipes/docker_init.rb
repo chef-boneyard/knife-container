@@ -14,11 +14,25 @@ directory temp_chef_repo do
   recursive true
 end
 
+# Generate Berksfile from runlist
+unless context.run_list.empty?
+  template File.join(dockerfile_dir, "Berksfile") do
+    source "berksfile.erb"
+    helpers(KnifeContainer::Generator::TemplateHelper)
+  end
+end 
+
+# Copy-in Berksfile
+unless context.berksfile.nil?
+  file File.join(dockerfile_dir, "Berksfile") do
+    content File.read(context.berksfile)
+  end
+end
+
 # Symlink the necessary directories into the temp chef-repo (if local-mode)
 if context.chef_client_mode == "zero"
   %w(cookbook role environment node).each do |dir|
-    link ::File.join(temp_chef_repo, "#{dir}s") do
-      to context.send(:"#{dir}_path")
+    execute "cp -r #{context.send(:"#{dir}_path")} #{File.join(temp_chef_repo, "#{dir}s")}" do
       only_if { File.exists?(context.send(:"#{dir}_path")) }
     end
   end

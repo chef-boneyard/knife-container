@@ -34,6 +34,9 @@ module KnifeContainer
       attr_accessor :validation_key
       attr_accessor :validation_client_name
       attr_accessor :first_boot
+      attr_accessor :berksfile
+      attr_accessor :run_berks
+      attr_accessor :force_build
 
     end
 
@@ -67,6 +70,9 @@ module KnifeContainer
       delegate_to_app_context :validation_key
       delegate_to_app_context :validation_client_name
       delegate_to_app_context :first_boot
+      delegate_to_app_context :berksfile
+      delegate_to_app_context :run_berks
+      delegate_to_app_context :force_build
 
     end
 

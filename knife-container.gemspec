@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = Knife::Container::VERSION
   spec.authors       = ["Tom Duffield"]
   spec.email         = ["tom@getchef.com"]
-  spec.summary       = %q{Docker support for Chef's Knife Command}
+  spec.summary       = %q{Container support for Chef's Knife Command}
   spec.description   = spec.summary
   spec.homepage      = "http://github.com/opscode/knife-container"
   spec.license       = "Apache 2.0"
@@ -18,8 +18,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "bundler", "~> 1.6"
-  spec.add_development_dependency "rake"
-  spec.add_development_dependency "chef", ">= 11.0.0"
+  spec.add_development_dependency "chef", "~> 11.0"
+  spec.add_development_dependency "berkshelf", "~> 3.0"
   spec.add_development_dependency "mixlib-config", "~> 2.0"
 end

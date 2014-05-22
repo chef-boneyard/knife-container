@@ -16,20 +16,65 @@
 #
 
 require 'spec_helper'
-require 'chef/knife/container/docker_init'
+require 'chef/knife/docker_init'
 
-describe KnifeContainer::DockerInit do
+describe Chef::Knife::DockerInit do
+
+  let(:stdout_io) { StringIO.new }
+  let(:stderr_io) { StringIO.new }
 
   def generator_context
     KnifeContainer::Generator.context
   end
 
-  let(:stdout_io) { StringIO.new }
-  let(:stderr_io) { StringIO.new }
-
   before do
     KnifeContainer::Generator.reset
   end
+
+  describe 'read_and_validate_params' do
+    it 'requires a dockerfile name be passed in'
+    it 'checks to see if berkshelf is installed if using berkshelf functionality'
+  end
+
+  describe 'set_config_defaults' do
+    context 'when no cli overrides have been specified' do
+      it 'sets validation_key to Chef::Config value'
+      it 'sets validation_client_name to Chef::Config value'
+      it 'sets chef_server_url to Chef::Config value'
+      it 'sets cookbook_path to Chef::Config value'
+      it 'sets node_path to Chef::Config value'
+      it 'sets role_path to Chef::Config value'
+      it 'sets environment_path to Chef::Config value'
+      it 'sets dockerfiles_path to Chef::Config[:dockerfiles_path]'
+      
+      context 'when Chef::Config[:dockerfiles_path] has not been set' do
+        it 'sets dockerfiles_path to Chef::Config[:chef_repo_path]/dockerfiles'
+      end
+    end
+  end
+
+  describe 'setup_context' do
+    context 'defaults only'
+      it 'sets the default base_image to chef/ubuntu_12.04'
+      it 'sets the runlist to an empty array'
+      it 'sets localmode to false'
+
+  end
+
+  describe 'first_value' do
+    it 'should return the first value of an array if an array is passed in'
+    it 'should return the full string if a string is passed in'
+  end
+
+  describe 'first_boot_content' do
+    it 'should add the run_list value' 
+  end
+
+  it "defaults to chef/ubuntu_12.04 for a docker base image"
+
+  it "generates a Berksfile based on the run_list when -b is specified with no value"
+
+  it "copies an existing Berksfile when a filepath is specified with the -b flag"
 
   context "when executed in local mode" do
     before do
@@ -38,25 +83,17 @@ describe KnifeContainer::DockerInit do
 
     let(:argv) { %W[
       docker/demo
-      -f ubuntu:12.04
       -r recipe[nginx]
       -z
-      --cookbook-path #{fixtures_path}/cookbooks
-      --node-path #{fixtures_path}/nodes
-      --environment-path #{fixtures_path}/environments
-      --role-path #{fixtures_path}/roles
-      -d #{tempdir}/dockerfiles
+      -b
     ]}
     
     let(:expected_container_file_relpaths) do
       %w[
         Dockerfile
+        Berksfile
         chef/first-boot.json
         chef/zero.rb
-        chef/cookbooks/dummy/metadata.rb
-        chef/nodes/demo.json
-        chef/environments/dev.json
-        chef/roles/base.json
       ]
     end
 
@@ -68,19 +105,15 @@ describe KnifeContainer::DockerInit do
 
     subject(:docker_init) { described_class.new(argv) }
 
-
     it "configures the Generator context" do
       docker_init.read_and_validate_params
       docker_init.setup_context
       expect(generator_context.dockerfile_name).to eq("docker/demo")
       expect(generator_context.dockerfiles_path).to eq("#{tempdir}/dockerfiles")
-      expect(generator_context.base_image).to eq("ubuntu:12.04")
+      expect(generator_context.base_image).to eq("chef/ubuntu_12.04")
       expect(generator_context.chef_client_mode).to eq("zero")
       expect(generator_context.run_list).to eq(%w[recipe[nginx]])
-      expect(generator_context.cookbook_path).to eq("#{fixtures_path}/cookbooks")
-      expect(generator_context.role_path).to eq("#{fixtures_path}/roles")
-      expect(generator_context.environment_path).to eq("#{fixtures_path}/environments")
-      expect(generator_context.node_path).to eq("#{fixtures_path}/nodes")
+      expect(generator_context.berksfile).to eq("#{fixtures_path}/Berksfile")
     end
 
     it "creates a folder to manage the Dockerfile and Chef files" do

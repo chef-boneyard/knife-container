@@ -19,7 +19,7 @@ require 'knife-container/generator'
 require 'knife-container/chef_runner'
 
 module KnifeContainer
-  class Command < Chef::Knife
+  module Command
 
     # An instance of ChefRunner. Calling ChefRunner#converge will trigger
     # convergence and generate the desired code.

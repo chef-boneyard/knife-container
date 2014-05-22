@@ -4,17 +4,10 @@ TODO: Write a gem description
 
 ## Installation
 
-Add this line to your application's Gemfile:
+### Building Locally
 
-    gem 'knife-container'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install knife-container
+    gem build knife-container.gemspec
+    gem install knife-container-0.0.1.gem
 
 ## Usage
 

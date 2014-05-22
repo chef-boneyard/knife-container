@@ -1,0 +1,5 @@
+source "https://api.berkshelf.com"
+
+<% run_list.each do |cookbook| -%>
+cookbook "<%= cookbook.match(/recipe\[(.*)\]/)[1] %>"
+<% end -%>
