@@ -1,6 +1,5 @@
 # Knife::Container
-
-TODO: Write a gem description
+Container support for Chef's Knife Command
 
 ## Installation
 
@@ -11,7 +10,8 @@ TODO: Write a gem description
 
 ## Usage
 
-TODO: Write usage instructions here
+### `knife docker init REPO/NAME (options)`
+### `knife docker build REPO/NAME (options)`
 
 ## Contributing
 
