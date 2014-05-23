@@ -19,6 +19,7 @@ unless context.run_list.empty?
   template File.join(dockerfile_dir, "Berksfile") do
     source "berksfile.erb"
     helpers(KnifeContainer::Generator::TemplateHelper)
+    only_if { context.generate_berksfile }
   end
 end 
 
