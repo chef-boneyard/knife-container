@@ -32,8 +32,17 @@ end
 # Symlink the necessary directories into the temp chef-repo (if local-mode)
 if context.chef_client_mode == "zero"
   %w(cookbook role environment node).each do |dir|
-    execute "cp -r #{context.send(:"#{dir}_path")} #{File.join(temp_chef_repo, "#{dir}s")}" do
-      only_if { File.exists?(context.send(:"#{dir}_path")) }
+    path = context.send(:"#{dir}_path")
+    if path.kind_of?(Array)
+      path.each do |p|
+        execute "cp -r #{p}/* #{File.join(temp_chef_repo, "#{dir}s/")}" do
+          only_if { File.exists?(p) }
+        end
+      end
+    elsif path.kind_of?(String)
+      execute "cp -r #{path}/* #{File.join(temp_chef_repo, "#{dir}s/")}" do
+        only_if { File.exists?(path) }
+      end
     end
   end
 end
