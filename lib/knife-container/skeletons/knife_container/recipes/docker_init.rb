@@ -36,7 +36,7 @@ if context.chef_client_mode == "zero"
     path = context.send(:"#{dir}_path")
     if path.kind_of?(Array)
       path.each do |p|
-        execute "cp -r #{p}/ #{File.join(temp_chef_repo, "#{dir}s/")}" do
+        execute "cp -r #{File.expand_path(p)}/ #{File.join(temp_chef_repo, "#{dir}s")}" do
           not_if { Dir["#{p}/*"].empty? }
         end
       end
