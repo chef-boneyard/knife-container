@@ -36,13 +36,13 @@ if context.chef_client_mode == "zero"
     path = context.send(:"#{dir}_path")
     if path.kind_of?(Array)
       path.each do |p|
-        execute "cp -r #{p}/* #{File.join(temp_chef_repo, "#{dir}s/")}" do
-          only_if { File.exists?(p) }
+        execute "cp -r #{p}/ #{File.join(temp_chef_repo, "#{dir}s/")}" do
+          not_if { Dir["#{p}/*"].empty? }
         end
       end
     elsif path.kind_of?(String)
-      execute "cp -r #{path}/* #{File.join(temp_chef_repo, "#{dir}s/")}" do
-        only_if { File.exists?(path) }
+      execute "cp -r #{path}/ #{File.join(temp_chef_repo, "#{dir}s/")}" do
+        not_if { Dir["#{path}/*"].empty? }
       end
     end
   end
