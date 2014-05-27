@@ -1,17 +1,35 @@
-# Knife::Container
-Container support for Chef's Knife Command
+Knife Container
+================
+[![Gem Version](https://badge.fury.io/rb/knife-container.png)](http://badge.fury.io/rb/knife-container)
 
-## Installation
+This plugin gives knife the ability to initialize and build Docker Containers.
+
+Installation
+------------
 
 ### Building Locally
+```bash
+gem build knife-container.gemspec
+gem install knife-container-0.0.1.gem
+```
 
-    gem build knife-container.gemspec
-    gem install knife-container-0.0.1.gem
+Subcommands
+-----------
 
-## Usage
+#### `knife docker init`
+Initializes a new docker image configuration. This command creates the underlying content use during the build process and can include a Dockerfile, Berksfile, cookbooks and chef-client configuration files.
 
-### `knife docker init REPO/NAME (options)`
+  # Initializing a bare image repository using chef/ubuntu_12.04 as the base image
+  `knife docker init your_username/image_name -f chef/ubuntu_12.04`
+
+  # Passing a run_list during initialization
+  `knife docker init your_username/nginx -f chef/ubuntu_12.04 -r 'recipe[apt],recipe[nginx]'`
+
+  # Using chef-zero to bundle cookbooks into an image
+  `knife docker init your_username/nginx -f chef/ubuntu_12.04 -r 'recipe[apt],recipe[nginx]' -z`
+
 ### `knife docker build REPO/NAME (options)`
+
 
 ## Contributing
 

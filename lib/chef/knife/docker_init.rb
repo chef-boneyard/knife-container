@@ -159,15 +159,11 @@ class Chef
       def first_boot_content
         first_boot = {}
         first_boot['run_list'] = config[:run_list]
-        first_boot
+        first_boot.to_json
       end
 
       def chef_client_mode
-        if config[:local_mode]
-          "zero"
-        else
-          "client"
-        end
+        config[:local_mode] ? "zero" : "client"
       end
 
     end
