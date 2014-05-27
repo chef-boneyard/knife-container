@@ -32,7 +32,23 @@ end
 
 # Symlink the necessary directories into the temp chef-repo (if local-mode)
 if context.chef_client_mode == "zero"
-  %w(cookbook role environment node).each do |dir|
+
+  cookbook_dir = context.send(:cookbook_path)
+  role_dir = context.send(:role_path)
+  env_dir = context.send(:environment_path)
+  node_dir = context.send(:node_path)
+
+  if cookbook_dir.kind_of?(Array)
+    cookbook_dir.each do |dir|
+      unless FileUtils.identical?(File.expand_path(dir), File.join(temp_chef_repo, 'cookbooks')
+        FileUtils.cp_r(File.expand_path(dir), temp_chef_repo, :remove_destination => true)
+      end
+    end
+  else
+    FileUtils.cp_r(cookbok_dir, temp_chef_repo, :remove_destination => true)
+  end
+
+  %w(role environment node).each do |dir|
     path = context.send(:"#{dir}_path")
     if path.kind_of?(Array)
       path.each do |p|
