@@ -1,9 +1,6 @@
-[![Build
-Status](https://travis-ci.org/micgo/knife-container.svg?branch=master)](https://travis-ci.org/micgo/knife-container)
-
 Knife Container
 ================
-[![Gem Version](https://badge.fury.io/rb/knife-container.png)](http://badge.fury.io/rb/knife-container)
+[![Gem Version](https://badge.fury.io/rb/knife-container.png)](http://badge.fury.io/rb/knife-container) [![Build Status](https://travis-ci.org/micgo/knife-container.svg?branch=master)](https://travis-ci.org/micgo/knife-container) [![Coverage Status](https://coveralls.io/repos/micgo/knife-container/badge.png)](https://coveralls.io/r/micgo/knife-container)
 
 This plugin gives knife the ability to initialize and build Docker Containers.
 
