@@ -44,11 +44,11 @@ module TestHelpers
 
   def reset_tempdir
     clear_tempdir
-    FileUtils.mkdir_p(tempdir)
+    tempdir
   end
 
   def clear_tempdir
-    FileUtils.rm_rf(tempdir)
+    FileUtils.rm_rf(@tmpdir)
     @tmpdir = nil
   end
 

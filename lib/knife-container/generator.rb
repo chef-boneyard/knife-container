@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 module KnifeContainer
 
   module Generator
@@ -35,6 +34,7 @@ module KnifeContainer
       attr_accessor :validation_client_name
       attr_accessor :first_boot
       attr_accessor :berksfile
+      attr_accessor :generate_berksfile
       attr_accessor :run_berks
       attr_accessor :force_build
 
@@ -71,6 +71,7 @@ module KnifeContainer
       delegate_to_app_context :validation_client_name
       delegate_to_app_context :first_boot
       delegate_to_app_context :berksfile
+      delegate_to_app_context :generate_berksfile
       delegate_to_app_context :run_berks
       delegate_to_app_context :force_build
 

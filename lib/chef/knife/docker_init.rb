@@ -132,7 +132,8 @@ class Chef
           config[:"#{var}"] ||= Chef::Config[:"#{var}"]
         end
 
-        config[:dockerfiles_path] = File.join(Chef::Config[:chef_repo_path], "dockerfiles")
+        Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
+        config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
       end
 
       def setup_context
