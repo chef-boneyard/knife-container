@@ -1,8 +1,6 @@
-
 context = KnifeContainer::Generator.context
 dockerfile_dir = File.join(context.dockerfiles_path, context.dockerfile_name)
 temp_chef_repo = File.join(dockerfile_dir, "chef")
-
 
 # Dockerfile directory (REPO/NAME)
 directory dockerfile_dir do
@@ -37,7 +35,7 @@ if context.chef_client_mode == "zero"
       end
     end
   else
-    FileUtils.cp_r(cookbok_dir, temp_chef_repo, :remove_destination => true)
+    FileUtils.cp_r(cookbook_dir, temp_chef_repo, :remove_destination => true)
   end
 
   %w(role environment node).each do |dir|

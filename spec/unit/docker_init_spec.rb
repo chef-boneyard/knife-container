@@ -23,6 +23,10 @@ describe Chef::Knife::DockerInit do
   let(:stdout_io) { StringIO.new }
   let(:stderr_io) { StringIO.new }
 
+  let(:default_cookbook_path) do
+    File.expand_path("cookbooks", fixtures_path)
+  end
+
   def generator_context
     KnifeContainer::Generator.context
   end
@@ -76,13 +80,15 @@ describe Chef::Knife::DockerInit do
 
   it "copies an existing Berksfile when a filepath is specified with the -b flag"
 
-  context "when executed in local mode" do
+  describe "when executed in local mode" do
     before do
-      reset_tempdir
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
     end
 
     let(:argv) { %W[
       docker/demo
+      --cookbook-path #{default_cookbook_path}
       -r recipe[nginx]
       -z
       -b
@@ -99,17 +105,18 @@ describe Chef::Knife::DockerInit do
 
     let(:expected_files) do
       expected_container_file_relpaths.map do |relpath|
-        File.join(tempdir, "dockerfiles", "docker/demo", relpath)
+        File.join(Chef::Config[:chef_repo_path], "dockerfiles", "docker/demo", relpath)
       end
     end
 
-    subject(:docker_init) { described_class.new(argv) }
+    subject(:docker_init) { Chef::Knife::DockerInit.new(argv) }
 
     it "configures the Generator context" do
       docker_init.read_and_validate_params
+      docker_init.set_config_defaults
       docker_init.setup_context
       expect(generator_context.dockerfile_name).to eq("docker/demo")
-      expect(generator_context.dockerfiles_path).to eq("#{tempdir}/dockerfiles")
+      expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
       expect(generator_context.base_image).to eq("chef/ubuntu_12.04")
       expect(generator_context.chef_client_mode).to eq("zero")
       expect(generator_context.run_list).to eq(%w[recipe[nginx]])
@@ -117,11 +124,11 @@ describe Chef::Knife::DockerInit do
     end
 
     it "creates a folder to manage the Dockerfile and Chef files" do
-      Dir.chdir(tempdir) do
+      Dir.chdir(Chef::Config[:chef_repo_path]) do
         docker_init.chef_runner.stub(:stdout).and_return(stdout_io)
         docker_init.run
       end
-      generated_files = Dir.glob("#{tempdir}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
+      generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
       expected_files.each do |expected_file|
         expect(generated_files).to include(expected_file)
       end
@@ -130,12 +137,14 @@ describe Chef::Knife::DockerInit do
 
   describe "executed in server mode" do
     before do
-      reset_tempdir
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
     end
 
     let(:argv) { %W[
       docker/demo
       -f ubuntu:12.04
+      --cookbook-path #{default_cookbook_path}
       -r recipe[nginx]
       -d #{tempdir}/dockerfiles
       --validation-key #{fixtures_path}/.chef/validation.pem
@@ -154,17 +163,18 @@ describe Chef::Knife::DockerInit do
 
     let(:expected_files) do
       expected_container_file_relpaths.map do |relpath|
-        File.join(tempdir, "dockerfiles", "docker/demo", relpath)
+        File.join(Chef::Config[:chef_repo_path], "dockerfiles", "docker/demo", relpath)
       end
     end
     
-    subject(:docker_init) { described_class.new(argv) }
+    subject(:docker_init) { Chef::Knife::DockerInit.new(argv) }
 
     it "configures the Generator context" do
       docker_init.read_and_validate_params
+      docker_init.set_config_defaults
       docker_init.setup_context
       expect(generator_context.dockerfile_name).to eq("docker/demo")
-      expect(generator_context.dockerfiles_path).to eq("#{tempdir}/dockerfiles")
+      expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
       expect(generator_context.base_image).to eq("ubuntu:12.04")
       expect(generator_context.chef_client_mode).to eq("client")
       expect(generator_context.run_list).to eq(%w[recipe[nginx]])
@@ -174,11 +184,11 @@ describe Chef::Knife::DockerInit do
     end
 
     it "creates a folder to manage the Dockerfile and Chef files" do
-      Dir.chdir(tempdir) do
+      Dir.chdir(Chef::Config[:chef_repo_path]) do
         docker_init.chef_runner.stub(:stdout).and_return(stdout_io)
         docker_init.run
       end
-      generated_files = Dir.glob("#{tempdir}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
+      generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
       expected_files.each do |expected_file|
         expect(generated_files).to include(expected_file)
       end
