@@ -31,38 +31,142 @@ describe Chef::Knife::DockerInit do
     KnifeContainer::Generator.context
   end
 
-  before do
+  before(:each) do
+    @knife = Chef::Knife::DockerInit.new(argv)
+    @knife.stub(:output).and_return(true)
     KnifeContainer::Generator.reset
   end
 
-  describe 'read_and_validate_params' do
-    it 'requires a dockerfile name be passed in'
+  describe 'when reading and validating parameters' do
+
+    let(:argv) { %W[] }
+
+    it 'should should print usage and exit when given no arguments' do
+      @knife.should_receive(:show_usage)
+      @knife.ui.should_receive(:fatal)
+      lambda { @knife.run }.should raise_error(SystemExit)
+    end
+
     it 'checks to see if berkshelf is installed if using berkshelf functionality'
   end
 
-  describe 'set_config_defaults' do
+  describe 'when setting config defaults' do
+    before do
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
+    end
+
+    let(:argv) { %W[
+      docker/demo
+    ]}
+
     context 'when no cli overrides have been specified' do
-      it 'sets validation_key to Chef::Config value'
-      it 'sets validation_client_name to Chef::Config value'
-      it 'sets chef_server_url to Chef::Config value'
-      it 'sets cookbook_path to Chef::Config value'
-      it 'sets node_path to Chef::Config value'
-      it 'sets role_path to Chef::Config value'
-      it 'sets environment_path to Chef::Config value'
-      it 'sets dockerfiles_path to Chef::Config[:dockerfiles_path]'
-      
+      it 'sets validation_key to Chef::Config value' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.validation_key).to eq(Chef::Config[:validation_key])
+      end
+      it 'sets validation_client_name to Chef::Config value' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.validation_client_name).to eq(Chef::Config[:validation_client_name])
+      end
+      it 'sets chef_server_url to Chef::Config value' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.chef_server_url).to eq(Chef::Config[:chef_server_url])
+      end
+      it 'sets cookbook_path to Chef::Config value' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.cookbook_path).to eq(Chef::Config[:cookbook_path])
+      end
+      it 'sets node_path to Chef::Config value' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.node_path).to eq(Chef::Config[:node_path])
+      end
+      it 'sets role_path to Chef::Config value' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.role_path).to eq(Chef::Config[:role_path])
+      end
+      it 'sets environment_path to Chef::Config value' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.environment_path).to eq(Chef::Config[:environment_path])
+      end
+      it 'sets dockerfiles_path to Chef::Config[:knife][:dockerfiles_path]' do
+        Chef::Config[:knife][:dockerfiles_path] = '/var/chef/dockerfiles'
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.dockerfiles_path).to eq("/var/chef/dockerfiles")
+      end
+
       context 'when Chef::Config[:dockerfiles_path] has not been set' do
-        it 'sets dockerfiles_path to Chef::Config[:chef_repo_path]/dockerfiles'
+        it 'sets dockerfiles_path to Chef::Config[:chef_repo_path]/dockerfiles' do
+          @knife.read_and_validate_params
+          @knife.set_config_defaults
+          @knife.setup_context
+          expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
+        end
       end
     end
   end
 
-  describe 'setup_context' do
-    context 'defaults only'
-      it 'sets the default base_image to chef/ubuntu_12.04'
-      it 'sets the runlist to an empty array'
-      it 'sets localmode to false'
+  describe 'when setting up the generator context' do
 
+    before do
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
+    end
+
+    context 'with defaults only' do
+      let(:argv) { %W[
+        docker/demo
+      ]}
+
+      it 'sets the default base_image to chef/ubuntu_12.04' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.base_image).to eq("chef/ubuntu_12.04")
+      end
+      it 'sets the runlist to an empty array' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.run_list).to eq([])
+      end        
+      it 'sets chef_client_mode to client' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.chef_client_mode).to eq("client")
+      end
+    end
+    
+    context 'while passing a run list' do
+      let(:argv) { %W[
+        docker/demo
+        -r recipe[apt],recipe[nginx]
+      ]}
+
+      it 'should add the run_list value to the first_boot.json if passed' do
+        @knife.read_and_validate_params
+        @knife.set_config_defaults
+        @knife.setup_context
+        expect(generator_context.first_boot).to include("run_list"=>["recipe[apt]","recipe[nginx]"])
+      end
+    end
   end
 
   describe 'first_value' do
@@ -70,15 +174,31 @@ describe Chef::Knife::DockerInit do
     it 'should return the full string if a string is passed in'
   end
 
-  describe 'first_boot_content' do
-    it 'should add the run_list value' 
+  describe 'when using Berkshelf' do
+
+    before do
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
+    end
+
+    context 'with -b is specified with no value' do
+      let(:argv) { %W[
+        docker/demo
+        -b
+      ]}
+
+      it 'generates a Berksfile based on the run_list'
+    end
+
+    context 'with a filepath specified with the -b flag' do
+      let(:argv) { %W[
+        docker/demo
+        -b Berksfile
+      ]}
+
+      it "copies an existing Berksfile when a filepath is specified with the -b flag"
+    end
   end
-
-  it "defaults to chef/ubuntu_12.04 for a docker base image"
-
-  it "generates a Berksfile based on the run_list when -b is specified with no value"
-
-  it "copies an existing Berksfile when a filepath is specified with the -b flag"
 
   describe "when executed in local mode" do
     before do
