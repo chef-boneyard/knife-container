@@ -23,6 +23,10 @@ describe Chef::Knife::DockerInit do
   let(:stdout_io) { StringIO.new }
   let(:stderr_io) { StringIO.new }
 
+  def stdout
+    stdout_io.string
+  end
+
   let(:default_cookbook_path) do
     File.expand_path("cookbooks", fixtures_path)
   end
@@ -206,6 +210,21 @@ describe Chef::Knife::DockerInit do
      Chef::Config[:chef_repo_path] = tempdir
     end
 
+    context "without a valid cookbook path" do
+      let(:argv) { %W[
+        docker/demo
+        -r recipe[nginx]
+        -z
+        -b
+      ]}
+
+      it "should log an error and not copy cookbooks" do
+        Chef::Config[:cookbook_path] = '/tmp/nil/cookbooks'
+        @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+        @knife.run
+        expect(stdout).to include('log[Source cookbook directory not found.] action write')
+      end      
+    end
     let(:argv) { %W[
       docker/demo
       --cookbook-path #{default_cookbook_path}

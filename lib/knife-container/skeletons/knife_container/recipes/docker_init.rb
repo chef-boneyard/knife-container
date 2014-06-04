@@ -1,3 +1,4 @@
+require 'pry'
 context = KnifeContainer::Generator.context
 dockerfile_dir = File.join(context.dockerfiles_path, context.dockerfile_name)
 temp_chef_repo = File.join(dockerfile_dir, "chef")
@@ -38,12 +39,16 @@ if context.chef_client_mode == "zero"
 
   if cookbook_dir.kind_of?(Array)
     cookbook_dir.each do |dir|
-      unless FileUtils.identical?(File.expand_path(dir), File.join(temp_chef_repo, 'cookbooks'))
+      if File.exists?(File.expand_path(dir))
         FileUtils.cp_r(File.expand_path(dir), temp_chef_repo, :remove_destination => true)
+      else
+        log "Source cookbook directory not found."
       end
     end
-  else
+  elsif File.exists?(File.expand_path(cookbook_dir))
     FileUtils.cp_r(cookbook_dir, temp_chef_repo, :remove_destination => true)
+  else
+    log "Source cookbook directory not found."
   end
 
   %w(role environment node).each do |dir|
