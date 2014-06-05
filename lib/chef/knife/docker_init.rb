@@ -152,7 +152,7 @@ class Chef
         generator_context.validation_key = config[:validation_key]
         generator_context.validation_client_name = config[:validation_client_name]
         generator_context.first_boot = first_boot_content
-        generator_context.berksfile = config[:berksfile]
+        generator_context.generate_berksfile = config[:generate_berksfile]
       end
 
       def recipe

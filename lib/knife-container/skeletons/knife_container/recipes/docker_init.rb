@@ -1,4 +1,3 @@
-require 'pry'
 context = KnifeContainer::Generator.context
 dockerfile_dir = File.join(context.dockerfiles_path, context.dockerfile_name)
 temp_chef_repo = File.join(dockerfile_dir, "chef")
@@ -36,17 +35,31 @@ if context.chef_client_mode == "zero"
   role_dir = context.send(:role_path)
   env_dir = context.send(:environment_path)
   node_dir = context.send(:node_path)
+  run_list = context.send(:run_list)
+  cookbooks = []
+
+  run_list.each do |recipe|
+    recipe.slice! "recipe["
+    recipe.slice! "]"
+    cookbooks << recipe.split(/::/).first
+  end
 
   if cookbook_dir.kind_of?(Array)
     cookbook_dir.each do |dir|
       if File.exists?(File.expand_path(dir))
-        FileUtils.cp_r(File.expand_path(dir), temp_chef_repo, :remove_destination => true)
+        directory "#{temp_chef_repo}/cookbooks"
+        cookbooks.each do |ckbk|
+          execute "cp -rf #{File.expand_path(dir)}/#{ckbk} #{temp_chef_repo}/cookbooks/"
+        end
       else
         log "Source cookbook directory not found."
       end
     end
   elsif File.exists?(File.expand_path(cookbook_dir))
-    FileUtils.cp_r(cookbook_dir, temp_chef_repo, :remove_destination => true)
+    directory "#{temp_chef_repo}/cookbooks"
+    cookbooks.each do |ckbk|
+      execute "cp -rf #{File.expand_path(cookbook_dir)}/ #{temp_chef_repo}"
+    end
   else
     log "Source cookbook directory not found."
   end
