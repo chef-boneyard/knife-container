@@ -30,14 +30,12 @@ class Chef
         :short => "-f [REPO/]IMAGE[:TAG]",
         :long => "--from [REPO/]IMAGE[:TAG]",
         :description => "The image to use for the FROM value in your Dockerfile",
-        :proc => Proc.new { |f| Chef::Config[:knife][:docker_image] = f },
-        :default => "chef/ubuntu_12.04"
+        :proc => Proc.new { |f| Chef::Config[:knife][:docker_image] = f }
 
       option :run_list,
         :short => "-r RunlistItem,RunlistItem...,",
         :long => "--run-list RUN_LIST",
         :description => "Comma seperated list of roles/recipes to apply to your Docker image",
-        :default => [],
         :proc => Proc.new { |o| o.split(/[\s,]+/) }
 
       option :local_mode, 
@@ -100,16 +98,16 @@ class Chef
 
       def read_and_validate_params
         if @name_args.length < 1
-          ui.error("You must specify a Dockerfile name")
           show_usage
+          ui.fatal("You must specify a Dockerfile name")
           exit 1
         end
         if config[:generate_berksfile]
           begin
             require 'berkshelf'
           rescue LoadError
-            ui.error("You must have the Berkshelf gem installed to use the Berksfile flag.")
             show_usage
+            ui.fatal("You must have the Berkshelf gem installed to use the Berksfile flag.")
             exit 1
           else
             # other exception
@@ -132,6 +130,10 @@ class Chef
           config[:"#{var}"] ||= Chef::Config[:"#{var}"]
         end
 
+        config[:base_image] ||= "chef/ubuntu_12.04"
+
+        config[:run_list] ||= []
+
         Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
       end
@@ -150,7 +152,7 @@ class Chef
         generator_context.validation_key = config[:validation_key]
         generator_context.validation_client_name = config[:validation_client_name]
         generator_context.first_boot = first_boot_content
-        generator_context.berksfile = config[:berksfile]
+        generator_context.generate_berksfile = config[:generate_berksfile]
       end
 
       def recipe

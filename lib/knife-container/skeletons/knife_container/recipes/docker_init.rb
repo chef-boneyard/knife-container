@@ -35,15 +35,33 @@ if context.chef_client_mode == "zero"
   role_dir = context.send(:role_path)
   env_dir = context.send(:environment_path)
   node_dir = context.send(:node_path)
+  # recipes = context.send(:run_list)
+  # cookbooks = []
+
+  # recipes.each do |recipe|
+  #   recipe.slice! "recipe["
+  #   recipe.slice! "]"
+  #   cookbooks << recipe.split(/::/).first
+  # end
 
   if cookbook_dir.kind_of?(Array)
     cookbook_dir.each do |dir|
-      unless FileUtils.identical?(File.expand_path(dir), File.join(temp_chef_repo, 'cookbooks'))
-        FileUtils.cp_r(File.expand_path(dir), temp_chef_repo, :remove_destination => true)
+      if File.exists?(File.expand_path(dir))
+        directory "#{temp_chef_repo}/cookbooks"
+        context.send(:run_list).each do |cookbook|
+          execute "cp -rf #{File.expand_path(dir)}/#{cookbook.match(/recipe\[(.*)\]/)[1]} #{temp_chef_repo}/cookbooks/"
+        end
+      else
+        log "Source cookbook directory not found."
       end
     end
+  elsif File.exists?(File.expand_path(cookbook_dir))
+    directory "#{temp_chef_repo}/cookbooks"
+    context.send(:run_list).each do |cookbook|
+      execute "cp -rf #{File.expand_path(cookbook_dir)}/#{cookbook.match(/recipe\[(.*)\]/)[1]} #{temp_chef_repo}/cookbooks/"
+    end
   else
-    FileUtils.cp_r(cookbook_dir, temp_chef_repo, :remove_destination => true)
+    log "Source cookbook directory not found."
   end
 
   %w(role environment node).each do |dir|
