@@ -51,7 +51,18 @@ describe Chef::Knife::DockerInit do
       lambda { @knife.run }.should raise_error(SystemExit)
     end
 
-    it 'checks to see if berkshelf is installed if using berkshelf functionality'
+    context 'and using berkshelf functionality' do
+
+      let(:argv) { %W[
+        docker/demo
+        -b
+      ]}
+
+      it 'loads berkshelf if available' do
+        @knife.read_and_validate_params
+        defined?(Berkshelf).should == "constant"
+      end
+    end
   end
 
   describe 'when setting config defaults' do
@@ -173,44 +184,14 @@ describe Chef::Knife::DockerInit do
     end
   end
 
-  describe 'first_value' do
-    it 'should return the first value of an array if an array is passed in'
-    it 'should return the full string if a string is passed in'
-  end
-
   describe 'when using Berkshelf' do
 
-    before do
+    before(:each) do
      Chef::Config.reset
      Chef::Config[:chef_repo_path] = tempdir
     end
 
-    context 'with -b is specified with no value' do
-      let(:argv) { %W[
-        docker/demo
-        -b
-      ]}
-
-      it 'generates a Berksfile based on the run_list'
-    end
-
-    context 'with a filepath specified with the -b flag' do
-      let(:argv) { %W[
-        docker/demo
-        -b Berksfile
-      ]}
-
-      it "copies an existing Berksfile when a filepath is specified with the -b flag"
-    end
-  end
-
-  describe "when executed in local mode" do
-    before do
-     Chef::Config.reset
-     Chef::Config[:chef_repo_path] = tempdir
-    end
-
-    context "without a valid cookbook path" do
+    context 'with -b passed as an argument' do
       let(:argv) { %W[
         docker/demo
         -r recipe[nginx]
@@ -218,13 +199,38 @@ describe Chef::Knife::DockerInit do
         -b
       ]}
 
-      it "should log an error and not copy cookbooks" do
-        Chef::Config[:cookbook_path] = '/tmp/nil/cookbooks'
-        @knife.chef_runner.stub(:stdout).and_return(stdout_io)
-        @knife.run
-        expect(stdout).to include('log[Source cookbook directory not found.] action write')
-      end      
+      it 'generates a Berksfile based on the run_list' do
+        Dir.chdir(Chef::Config[:chef_repo_path]) do
+          @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+          @knife.run
+        end
+        File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Berksfile").should include 'cookbook "nginx"'
+      end
     end
+  end
+
+  describe "when executed without a valid cookbook path" do
+    let(:argv) { %W[
+      docker/demo
+      -r recipe[nginx]
+      -z
+      -b
+    ]}
+
+    it "should log an error and not copy cookbooks" do
+      Chef::Config[:cookbook_path] = '/tmp/nil/cookbooks'
+      @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+      @knife.run
+      expect(stdout).to include('log[Source cookbook directory not found.] action write')
+    end      
+  end
+
+  describe "when executed in local mode" do
+    before(:each) do
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
+    end
+
     let(:argv) { %W[
       docker/demo
       --cookbook-path #{default_cookbook_path}
@@ -248,24 +254,23 @@ describe Chef::Knife::DockerInit do
       end
     end
 
-    subject(:docker_init) { Chef::Knife::DockerInit.new(argv) }
-
     it "configures the Generator context" do
-      docker_init.read_and_validate_params
-      docker_init.set_config_defaults
-      docker_init.setup_context
+      @knife.read_and_validate_params
+      @knife.set_config_defaults
+      @knife.setup_context
       expect(generator_context.dockerfile_name).to eq("docker/demo")
       expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
+      expect(generator_context.cookbook_path).to eq([default_cookbook_path])
       expect(generator_context.base_image).to eq("chef/ubuntu_12.04")
       expect(generator_context.chef_client_mode).to eq("zero")
       expect(generator_context.run_list).to eq(%w[recipe[nginx]])
-      expect(generator_context.berksfile).to eq("#{fixtures_path}/Berksfile")
+      expect(generator_context.generate_berksfile).to eq(true)
     end
 
     it "creates a folder to manage the Dockerfile and Chef files" do
       Dir.chdir(Chef::Config[:chef_repo_path]) do
-        docker_init.chef_runner.stub(:stdout).and_return(stdout_io)
-        docker_init.run
+        @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+        @knife.run
       end
       generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
       expected_files.each do |expected_file|
