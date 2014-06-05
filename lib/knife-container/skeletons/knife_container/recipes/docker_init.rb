@@ -35,21 +35,21 @@ if context.chef_client_mode == "zero"
   role_dir = context.send(:role_path)
   env_dir = context.send(:environment_path)
   node_dir = context.send(:node_path)
-  run_list = context.send(:run_list)
-  cookbooks = []
+  # recipes = context.send(:run_list)
+  # cookbooks = []
 
-  run_list.each do |recipe|
-    recipe.slice! "recipe["
-    recipe.slice! "]"
-    cookbooks << recipe.split(/::/).first
-  end
+  # recipes.each do |recipe|
+  #   recipe.slice! "recipe["
+  #   recipe.slice! "]"
+  #   cookbooks << recipe.split(/::/).first
+  # end
 
   if cookbook_dir.kind_of?(Array)
     cookbook_dir.each do |dir|
       if File.exists?(File.expand_path(dir))
         directory "#{temp_chef_repo}/cookbooks"
-        cookbooks.each do |ckbk|
-          execute "cp -rf #{File.expand_path(dir)}/#{ckbk} #{temp_chef_repo}/cookbooks/"
+        context.send(:run_list).each do |cookbook|
+          execute "cp -rf #{File.expand_path(dir)}/#{cookbook.match(/recipe\[(.*)\]/)[1]} #{temp_chef_repo}/cookbooks/"
         end
       else
         log "Source cookbook directory not found."
@@ -57,8 +57,8 @@ if context.chef_client_mode == "zero"
     end
   elsif File.exists?(File.expand_path(cookbook_dir))
     directory "#{temp_chef_repo}/cookbooks"
-    cookbooks.each do |ckbk|
-      execute "cp -rf #{File.expand_path(cookbook_dir)}/ #{temp_chef_repo}"
+    context.send(:run_list).each do |cookbook|
+      execute "cp -rf #{File.expand_path(cookbook_dir)}/#{cookbook.match(/recipe\[(.*)\]/)[1]} #{temp_chef_repo}/cookbooks/"
     end
   else
     log "Source cookbook directory not found."

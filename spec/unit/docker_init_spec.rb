@@ -245,6 +245,7 @@ describe Chef::Knife::DockerInit do
         Berksfile
         chef/first-boot.json
         chef/zero.rb
+        chef/cookbooks/nginx
       ]
     end
 
@@ -277,6 +278,15 @@ describe Chef::Knife::DockerInit do
         expect(generated_files).to include(expected_file)
       end
     end
+
+    it "only copies cookbooks that exist in the run_list" do
+      Dir.chdir(Chef::Config[:chef_repo_path]) do
+        @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+        @knife.run
+        expect(stdout).to include("execute[cp -rf #{default_cookbook_path}/nginx #{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/chef/cookbooks/] action run")
+        expect(stdout).not_to include("execute[cp -rf #{default_cookbook_path}/dummy #{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/chef/cookbooks/] action run")
+      end
+    end     
   end
 
   describe "executed in server mode" do
@@ -314,9 +324,9 @@ describe Chef::Knife::DockerInit do
     subject(:docker_init) { Chef::Knife::DockerInit.new(argv) }
 
     it "configures the Generator context" do
-      docker_init.read_and_validate_params
-      docker_init.set_config_defaults
-      docker_init.setup_context
+      @knife.read_and_validate_params
+      @knife.set_config_defaults
+      @knife.setup_context
       expect(generator_context.dockerfile_name).to eq("docker/demo")
       expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
       expect(generator_context.base_image).to eq("ubuntu:12.04")
@@ -326,17 +336,5 @@ describe Chef::Knife::DockerInit do
       expect(generator_context.validation_client_name).to eq("masterchef")
       expect(generator_context.validation_key).to eq("#{fixtures_path}/.chef/validation.pem")
     end
-
-    it "creates a folder to manage the Dockerfile and Chef files" do
-      Dir.chdir(Chef::Config[:chef_repo_path]) do
-        docker_init.chef_runner.stub(:stdout).and_return(stdout_io)
-        docker_init.run
-      end
-      generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
-      expected_files.each do |expected_file|
-        expect(generated_files).to include(expected_file)
-      end
-    end
   end
-
 end
