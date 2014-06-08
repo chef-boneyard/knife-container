@@ -1,11 +1,10 @@
 FROM <%= base_image %>
 <% if chef_client_mode == "zero" -%>
 ADD chef/ /chef/
-RUN chef-client -c /chef/zero.rb -j /chef/first-boot.json -z
 <% elsif chef_client_mode == "client" -%>
 ADD chef/ /etc/chef/
-RUN chef-client -c /etc/chef/client.rb -j /etc/chef/first-boot.json
 <% end -%>
+RUN chef-init --bootstrap
 ENTRYPOINT ["chef-init"]
 CMD ["--onboot"]
 
