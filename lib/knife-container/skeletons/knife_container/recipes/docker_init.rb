@@ -80,6 +80,20 @@ if context.chef_client_mode == "client"
   end
 end
 
+directory File.join(temp_chef_repo, "ohai")
+
+# docker hints directory
+directory File.join(temp_chef_repo, "ohai", "hints")
+
+# docker plugins directory
+directory File.join(temp_chef_repo, "ohai", "plugins")
+
+# docker_container Ohai plugin
+cookbook_file File.join(temp_chef_repo, "ohai", "plugins", "docker_container.rb") do
+  source "plugins/docker_container.rb"
+  mode "0755"
+end
+
 # Client Config
 template File.join(temp_chef_repo, "#{context.chef_client_mode}.rb") do
   source "config.rb.erb"

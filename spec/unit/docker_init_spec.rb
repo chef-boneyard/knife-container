@@ -179,7 +179,7 @@ describe Chef::Knife::DockerInit do
         @knife.read_and_validate_params
         @knife.set_config_defaults
         @knife.setup_context
-        expect(generator_context.first_boot).to include("run_list"=>["recipe[apt]","recipe[nginx]"])
+        expect(generator_context.first_boot).to include('"run_list":["recipe[apt]","recipe[nginx]"]')
       end
     end
   end
@@ -246,6 +246,8 @@ describe Chef::Knife::DockerInit do
         chef/first-boot.json
         chef/zero.rb
         chef/cookbooks/nginx
+        chef/ohai/hints
+        chef/ohai/plugins/docker_container.rb
       ]
     end
 
@@ -312,6 +314,8 @@ describe Chef::Knife::DockerInit do
         chef/first-boot.json
         chef/client.rb
         chef/validation.pem
+        chef/ohai/hints
+        chef/ohai/plugins/docker_container.rb
       ]
     end
 
