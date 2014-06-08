@@ -2,6 +2,22 @@ context = KnifeContainer::Generator.context
 dockerfile_dir = File.join(context.dockerfiles_path, context.dockerfile_name)
 temp_chef_repo = File.join(dockerfile_dir, "chef")
 
+require 'chef/run_list/run_list_item'
+run_list_items = context.send(:run_list).map { |i| Chef::RunList::RunListItem.new(i) }
+cookbooks = []
+
+run_list_items.each do |item|
+  # Extract cookbook name from recipe
+  if item.recipe?
+    rmatch = item.name.match(/(.+?)::(.+)/)
+    if rmatch
+      cookbooks << rmatch[1]
+    else
+      cookbooks << item.name
+    end
+  end
+end
+
 # Dockerfile directory (REPO/NAME)
 directory dockerfile_dir do
   recursive true
@@ -16,6 +32,7 @@ end
 unless context.run_list.empty?
   template File.join(dockerfile_dir, "Berksfile") do
     source "berksfile.erb"
+    variables :cookbooks => cookbooks
     helpers(KnifeContainer::Generator::TemplateHelper)
     only_if { context.generate_berksfile }
   end
@@ -27,21 +44,13 @@ if context.chef_client_mode == "zero"
   role_dir = context.send(:role_path)
   env_dir = context.send(:environment_path)
   node_dir = context.send(:node_path)
-  # recipes = context.send(:run_list)
-  # cookbooks = []
-
-  # recipes.each do |recipe|
-  #   recipe.slice! "recipe["
-  #   recipe.slice! "]"
-  #   cookbooks << recipe.split(/::/).first
-  # end
 
   if cookbook_dir.kind_of?(Array)
     cookbook_dir.each do |dir|
       if File.exists?(File.expand_path(dir))
         directory "#{temp_chef_repo}/cookbooks"
-        context.send(:run_list).each do |cookbook|
-          execute "cp -rf #{File.expand_path(dir)}/#{cookbook.match(/recipe\[(.*)\]/)[1]} #{temp_chef_repo}/cookbooks/"
+        cookbooks.each do |cookbook|
+          execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
         end
       else
         log "Source cookbook directory not found."

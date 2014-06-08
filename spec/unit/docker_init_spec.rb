@@ -206,6 +206,24 @@ describe Chef::Knife::DockerInit do
         end
         File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Berksfile").should include 'cookbook "nginx"'
       end
+
+      context 'when run_list includes fully-qualified recipe name' do
+        let(:argv) { %W[
+          docker/demo
+          -r role[demo],recipe[demo::recipe],recipe[nginx]
+          -z
+          -b
+        ]}
+
+        it 'correctly configures Berksfile with just cookbook name' do
+          Dir.chdir(Chef::Config[:chef_repo_path]) do
+            @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+            @knife.run
+          end
+          File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Berksfile").should include 'cookbook "demo"'
+          File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Berksfile").should include 'cookbook "nginx"'
+        end
+      end
     end
   end
 

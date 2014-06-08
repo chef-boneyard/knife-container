@@ -65,22 +65,22 @@ class Chef
 
       option :cookbook_path,
         :long => "--cookbook-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for cookbooks in",
+        :description => "A colon-seperated path to look for cookbooks",
         :proc => Proc.new { |o| o.split(':') }
 
       option :role_path,
         :long => "--role-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for roles in",
+        :description => "A colon-seperated path to look for roles",
         :proc => Proc.new { |o| o.split(':') }
 
       option :node_path,
         :long => "--node-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for node objects in",
+        :description => "A colon-seperated path to look for node objects",
         :proc => Proc.new { |o| o.split(':') }
 
       option :environment_path,
         :long => "--environment-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for environments in",
+        :description => "A colon-seperated path to look for environments",
         :proc => Proc.new { |o| o.split(':') }
 
       option :dockerfiles_path,
@@ -88,7 +88,6 @@ class Chef
         :long => "--dockerfiles-path PATH",
         :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
-      
       def run
         read_and_validate_params
         set_config_defaults
