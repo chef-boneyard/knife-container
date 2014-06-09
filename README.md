@@ -7,9 +7,16 @@ This plugin gives knife the ability to initialize and build Docker Containers.
 Installation
 ------------
 
-### Building Locally
+### Build Locally
 ```bash
-rake install
+bundle install
+bundle exec rake build
+```
+
+### Build and Install Locally
+```bash
+bundle install
+bundle exec rake install
 ```
 
 Subcommands

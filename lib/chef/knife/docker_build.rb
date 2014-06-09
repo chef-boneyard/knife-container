@@ -18,6 +18,7 @@
 require 'chef/knife'
 require 'knife-container/command'
 require 'chef/mixin/shell_out'
+require 'open3'
 
 class Chef
   class Knife
@@ -30,7 +31,7 @@ class Chef
 
       option :run_berks,
         :long => "--[no-]-berks",
-        :description => "Run `berks vendor` for local-mode and `berks upload` for server-mode.",
+        :description => "Run `berks vendor` for local-mode and `berks upload` for server-mode (if Berksfile exists)",
         :default => true,
         :boolean => true
 
@@ -47,17 +48,38 @@ class Chef
 
       def run
         read_and_validate_params
+        setup_config_defaults
         setup_context
-        chef_runner.converge
+        run_berks
+        build_image
       end
 
 
       def read_and_validate_params
         if @name_args.length < 1
-          ui.error("You must specify a Dockerfile name")
           show_usage
+          ui.fatal("You must specify a Dockerfile name")
           exit 1
         end
+
+        if config[:run_berks]
+          begin
+            require 'berkshelf'
+          rescue LoadError
+            show_usage
+            ui.fatal("You must have the Berkshelf gem installed to use the `berks` flag")
+            exit 1
+          else
+            # other exception
+          ensure
+            # always executed
+          end
+        end
+      end
+
+      def setup_config_defaults
+        Chef::Config[:knife][:dockerfiles_path] ||=File.join(Chef::Config[:chef_repo_path], "dockerfiles")
+        config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
       end
 
       def setup_context
@@ -67,8 +89,43 @@ class Chef
         generator_context.force_build = config[:force_build]
       end
 
-      def recipe
-        "docker_build"
+      def run_berks
+        if config[:run_berks]
+          require 'berkshelf'
+          require 'berkshelf/berksfile'
+          dockerfile_dir = File.join(config[:dockerfiles_path], @name_args[0])
+          berks = Berkshelf::Berksfile.from_file(File.join(dockerfile_dir, "Berksfile"))
+          berks.install
+
+          temp_chef_repo = File.join(dockerfile_dir, "chef")
+
+          if File.exists?(File.join(temp_chef_repo, "zero.rb"))
+            if File.exists?(File.join(temp_chef_repo, "cookbooks")) && config[:force_build]
+              FileUtils.rm_rf(File.join(temp_chef_repo, "cookbooks"))
+            end
+            berks.vendor(File.join(temp_chef_repo, "cookbooks"))
+          elsif File.exists?(File.join(temp_chef_repo, "client.rb"))
+            if config[:force_build]
+              berks.upload(force: true, freeze: true)
+            else
+              berks.upload
+            end
+          end
+        end
+      end
+
+
+      def build_image
+        Open3.popen2e(docker_build_command) do |stdin, stdout_err, wait_thr|
+          while line = stdout_err.gets
+            puts line
+          end
+          wait_thr.value
+        end
+      end
+
+      def docker_build_command
+        "docker build -t #{@name_args[0]} #{config[:dockerfiles_path]}/#{@name_args[0]}"
       end
     end 
   end

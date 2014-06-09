@@ -111,7 +111,7 @@ end
 
 # First Boot JSON
 file File.join(temp_chef_repo, "first-boot.json") do
-  content context.first_boot.to_json
+  content context.first_boot
 end
 
 # Dockerfile

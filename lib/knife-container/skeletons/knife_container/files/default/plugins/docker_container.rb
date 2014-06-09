@@ -1,8 +1,6 @@
 require 'docker' # it gets this from chef-init
 
 Ohai.plugin(:DockerContainer) do
-  include DockerContainerMetadata
-
   provides "docker_container"
 
   def container_id
