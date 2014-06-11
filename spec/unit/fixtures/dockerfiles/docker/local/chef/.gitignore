@@ -1,0 +1,10 @@
+Berksfile.lock
+cookbooks/apt
+cookbooks/bluepill
+cookbooks/build-essential
+cookbooks/ohai
+cookbooks/rsyslog
+cookbooks/runit
+cookbooks/yum
+cookbooks/yum-epel
+cookbooks/Berksfile.lock
