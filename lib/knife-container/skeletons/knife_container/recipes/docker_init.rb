@@ -115,7 +115,7 @@ file File.join(temp_chef_repo, "first-boot.json") do
 end
 
 # Dockerfile
-template "#{dockerfile_dir}/Dockerfile" do
+template File.join(dockerfile_dir, "Dockerfile") do
   source "dockerfile.erb"
   helpers(KnifeContainer::Generator::TemplateHelper)
 end
