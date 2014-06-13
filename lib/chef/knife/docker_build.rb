@@ -41,19 +41,16 @@ class Chef
         :boolean => true
 
       option :dockerfiles_path,
-        :short => "-d DOCKERFILES_PATH",
-        :long => "--dockerfiles-path DOCKERFILES_PATH",
-        :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d },
-        :default => File.join(Chef::Config[:chef_repo_path], "dockerfiles")
+        :short => "-d PATH",
+        :long => "--dockerfiles-path PATH",
+        :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
       def run
         read_and_validate_params
         setup_config_defaults
-        setup_context
         run_berks
         build_image
       end
-
 
       def read_and_validate_params
         if @name_args.length < 1
@@ -82,13 +79,6 @@ class Chef
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
       end
 
-      def setup_context
-        generator_context.dockerfile_name = @name_args[0]
-        generator_context.dockerfiles_path = config[:dockerfiles_path]
-        generator_context.run_berks = config[:run_berks]
-        generator_context.force_build = config[:force_build]
-      end
-
       def run_berks
         if config[:run_berks]
           require 'berkshelf'
@@ -102,6 +92,10 @@ class Chef
           if File.exists?(File.join(temp_chef_repo, "zero.rb"))
             if File.exists?(File.join(temp_chef_repo, "cookbooks")) && config[:force_build]
               FileUtils.rm_rf(File.join(temp_chef_repo, "cookbooks"))
+            else
+              show_usage
+              ui.fatal("A `cookbooks` directory already exists. You must either remove this directory from your dockerfile directory or use the `force` flag")
+              exit 1
             end
             berks.vendor(File.join(temp_chef_repo, "cookbooks"))
           elsif File.exists?(File.join(temp_chef_repo, "client.rb"))

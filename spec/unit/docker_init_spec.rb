@@ -228,6 +228,12 @@ describe Chef::Knife::DockerInit do
   end
 
   describe "when executed without a valid cookbook path" do
+
+    before(:each) do
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
+    end
+
     let(:argv) { %W[
       docker/demo
       -r recipe[nginx]
