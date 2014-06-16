@@ -1,11 +1,9 @@
-Knife Container
-================
+# Knife Container
 [![Gem Version](https://badge.fury.io/rb/knife-container.png)](http://badge.fury.io/rb/knife-container) [![Build Status](https://travis-ci.org/opscode/knife-container.svg?branch=master)](https://travis-ci.org/opscode/knife-container)
 
-This plugin gives knife the ability to initialize and build Docker Containers.
+This plugin gives knife the ability to initialize and build Linux Containers.
 
-Installation
-------------
+## Installation
 
 ### Build Locally
 ```bash
@@ -19,22 +17,23 @@ bundle install
 bundle exec rake install
 ```
 
-Subcommands
------------
+## Subcommands
 
-#### `knife docker init`
+### Docker
+
+#### `knife container docker init`
 Initializes a new docker image configuration. This command creates the underlying content use during the build process and can include a Dockerfile, Berksfile, cookbooks and chef-client configuration files.
 
   * Initializing a bare image repository using chef/ubuntu_12.04 as the base image
-  `knife docker init your_username/image_name -f chef/ubuntu_12.04`
+  `knife container docker init your_username/image_name -f chef/ubuntu_12.04`
 
   * Passing a run_list during initialization
-  `knife docker init your_username/nginx -f chef/ubuntu_12.04 -r 'recipe[apt],recipe[nginx]'`
+  `knife container docker init your_username/nginx -f chef/ubuntu_12.04 -r 'recipe[apt],recipe[nginx]'`
 
   * Using chef-zero to bundle cookbooks into an image
-  `knife docker init your_username/nginx -f chef/ubuntu_12.04 -r 'recipe[apt],recipe[nginx]' -z`
+  `knife container docker init your_username/nginx -f chef/ubuntu_12.04 -r 'recipe[apt],recipe[nginx]' -z`
 
-#### `knife docker build REPO/NAME (options)`
+#### `knife container docker build REPO/NAME (options)`
 
 
 ## Contributing

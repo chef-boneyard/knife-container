@@ -16,9 +16,9 @@
 #
 
 require 'spec_helper'
-require 'chef/knife/docker_build'
+require 'chef/knife/container/docker_build'
 
-describe Chef::Knife::DockerBuild do
+describe Chef::Knife::Container::DockerBuild do
 
   let(:stdout_io) { StringIO.new }
   let(:stderr_io) { StringIO.new }
@@ -36,7 +36,7 @@ describe Chef::Knife::DockerBuild do
   end
 
   before(:each) do
-    @knife = Chef::Knife::DockerBuild.new(argv)
+    @knife = Chef::Knife::Container::DockerBuild.new(argv)
     @knife.stub(:output).and_return(true)
     KnifeContainer::Generator.reset
   end
