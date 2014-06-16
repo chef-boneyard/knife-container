@@ -4,3 +4,7 @@ source 'https://rubygems.org'
 gemspec
 
 gem 'coveralls', require: false
+
+group :spec do
+  gem 'berkshelf', '~> 3.1.1'
+end
