@@ -1,9 +1,5 @@
 FROM <%= base_image %>
-<% if chef_client_mode == "zero" -%>
-ADD chef/ /chef/
-<% elsif chef_client_mode == "client" -%>
 ADD chef/ /etc/chef/
-<% end -%>
 RUN chef-init --bootstrap
 ENTRYPOINT ["chef-init"]
 CMD ["--onboot"]
