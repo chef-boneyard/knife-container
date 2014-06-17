@@ -16,9 +16,9 @@
 #
 
 require 'spec_helper'
-require 'chef/knife/docker_init'
+require 'chef/knife/container_docker_init'
 
-describe Chef::Knife::DockerInit do
+describe Chef::Knife::ContainerDockerInit do
 
   let(:stdout_io) { StringIO.new }
   let(:stderr_io) { StringIO.new }
@@ -36,7 +36,7 @@ describe Chef::Knife::DockerInit do
   end
 
   before(:each) do
-    @knife = Chef::Knife::DockerInit.new(argv)
+    @knife = Chef::Knife::ContainerDockerInit.new(argv)
     @knife.stub(:output).and_return(true)
     KnifeContainer::Generator.reset
   end
@@ -179,7 +179,7 @@ describe Chef::Knife::DockerInit do
         @knife.read_and_validate_params
         @knife.set_config_defaults
         @knife.setup_context
-        expect(generator_context.first_boot).to include("run_list"=>["recipe[apt]","recipe[nginx]"])
+        expect(generator_context.first_boot).to include('"run_list":["recipe[apt]","recipe[nginx]"]')
       end
     end
   end
@@ -206,10 +206,34 @@ describe Chef::Knife::DockerInit do
         end
         File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Berksfile").should include 'cookbook "nginx"'
       end
+
+      context 'when run_list includes fully-qualified recipe name' do
+        let(:argv) { %W[
+          docker/demo
+          -r role[demo],recipe[demo::recipe],recipe[nginx]
+          -z
+          -b
+        ]}
+
+        it 'correctly configures Berksfile with just cookbook name' do
+          Dir.chdir(Chef::Config[:chef_repo_path]) do
+            @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+            @knife.run
+          end
+          File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Berksfile").should include 'cookbook "demo"'
+          File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Berksfile").should include 'cookbook "nginx"'
+        end
+      end
     end
   end
 
   describe "when executed without a valid cookbook path" do
+
+    before(:each) do
+     Chef::Config.reset
+     Chef::Config[:chef_repo_path] = tempdir
+    end
+
     let(:argv) { %W[
       docker/demo
       -r recipe[nginx]
@@ -246,6 +270,8 @@ describe Chef::Knife::DockerInit do
         chef/first-boot.json
         chef/zero.rb
         chef/cookbooks/nginx
+        chef/ohai/hints
+        chef/ohai/plugins/docker_container.rb
       ]
     end
 
@@ -312,6 +338,8 @@ describe Chef::Knife::DockerInit do
         chef/first-boot.json
         chef/client.rb
         chef/validation.pem
+        chef/ohai/hints
+        chef/ohai/plugins/docker_container.rb
       ]
     end
 

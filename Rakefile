@@ -1,7 +1,7 @@
 require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
 
-RSpec::Core::RakeTask.new(:unit) do |t|
+RSpec::Core::RakeTask.new(:spec) do |t|
   t.rspec_opts = [].tap do |a|
     a.push('--color')
     a.push('--format progress')
@@ -9,7 +9,8 @@ RSpec::Core::RakeTask.new(:unit) do |t|
 end
 
 desc 'Run all tests'
-task :test => [:unit]
+task :test => [:spec]
+
 
 task :default => [:test]
 
