@@ -24,7 +24,7 @@ class Chef
 
       include KnifeContainer::Command
 
-      banner "knife docker init REPO/NAME [options]"
+      banner "knife container docker init REPO/NAME [options]"
 
       option :base_image,
         :short => "-f [REPO/]IMAGE[:TAG]",
@@ -86,6 +86,7 @@ class Chef
       option :dockerfiles_path,
         :short => "-d PATH",
         :long => "--dockerfiles-path PATH",
+        :description => "Path to the directory where Docker contexts are kept",
         :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
       def run
