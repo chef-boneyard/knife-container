@@ -31,18 +31,18 @@ class Chef
 
       option :run_berks,
         :long => "--no-berks",
-        :description => "Do not run `berks vendor` for local-mode and `berks upload` for server-mode (if Berksfile exists)",
+        :description => "Skip Berkshelf steps",
         :boolean => true
 
       option :force_build,
         :long => "--force",
-        :description => "",
+        :description => "Force the Docker image build",
         :boolean => true
 
       option :dockerfiles_path,
         :short => "-d PATH",
         :long => "--dockerfiles-path PATH",
-        :description => "",
+        :description => "Path to the directory where Docker contexts are kept",
         :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
       def run
