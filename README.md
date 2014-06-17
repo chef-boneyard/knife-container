@@ -1,28 +1,27 @@
 # Knife Container
 [![Gem Version](https://badge.fury.io/rb/knife-container.png)](http://badge.fury.io/rb/knife-container) [![Build Status](https://travis-ci.org/opscode/knife-container.svg?branch=master)](https://travis-ci.org/opscode/knife-container)
 
-This plugin gives knife the ability to initialize and build Linux Containers.
+This is the official Chef plugin for Linux Containers. This plugin gives knife the ability to initialize and build Linux Containers.
 
 ## Installation
 
-### Build Locally
-```bash
-bundle install
-bundle exec rake build
-```
+If you’re using bundler, simply add Chef and Knife Container to your `Gemfile`
+    gem 'chef'
+    gem 'knife-container'
 
-### Build and Install Locally
-```bash
-bundle install
-bundle exec rake install
-```
+If you’re not using bundler, you can install the gem manually. Be sure you are running Chef 0.10.10 or higher, as earlier versions do not support plugins.
+    $ gem install knife-container
+
+### Build Locally
+If you would like to build the gem from source locally, please clone this repository on to your local machine and build the gem locally. 
+    $ bundle install
+    $ bundle exec rake install
 
 ## Subcommands
-
-### Docker
+This plugin provides the following Knife subcommands. Specific command options can be found by invoking the subcommand with a `--help` flag.
 
 #### `knife container docker init`
-Initializes a new docker image configuration. This command creates the underlying content use during the build process and can include a Dockerfile, Berksfile, cookbooks and chef-client configuration files.
+Initializes a new folder that will hold all the files and folders necessary to build a Docker image called a “Docker context.” This files and folders that can make up your Docker context include a Dockerfile, Berksfile, cookbooks and chef-client configuration files.
 
   * Initializing a bare image repository using chef/ubuntu_12.04 as the base image
   `knife container docker init your_username/image_name -f chef/ubuntu_12.04`
@@ -33,8 +32,14 @@ Initializes a new docker image configuration. This command creates the underlyin
   * Using chef-zero to bundle cookbooks into an image
   `knife container docker init your_username/nginx -f chef/ubuntu_12.04 -r 'recipe[apt],recipe[nginx]' -z`
 
-#### `knife container docker build REPO/NAME (options)`
+#### `knife container docker build`
+Builds a Docker image based on the Docker context specified. If the image was initialized using the `-z` flag and a Berksfile exists, it will run `berks vendor` and vendor the required cookbooks into the required directory. If the image was initialized without the `-z` flag and a Berksfile exists, it will run `berks upload` and upload the required cookbooks to you Chef Server.
 
+  * Build an image
+  `knife container docker build your_username/image_name`
+
+  * Build an image and force Berkshelf resolution
+  `knife container docker build your_username/image_name --force`
 
 ## Contributing
 Please read [CONTRIBUTING.md](CONTRIBUTING.md)
