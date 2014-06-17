@@ -49,10 +49,10 @@ Full License: [here](LICENSE)
 
 Knife-Container - a Knife plugin for chef-container
 
-Author:: Tom Duffield (<tom@getchef.com>)
+Author:: Tom Duffield (<tom@getchef.com>)  
 Author:: Michael Goetz (<mpgoetz@getchef.com>)
 
-Copyright:: Copyright (c) 2012-2014 Chef Software, Inc.
+Copyright:: Copyright (c) 2012-2014 Chef Software, Inc.  
 License:: Apache License, Version 2.0
 
 Licensed under the Apache License, Version 2.0 (the "License");
