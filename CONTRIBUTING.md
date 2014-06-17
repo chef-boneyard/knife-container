@@ -12,8 +12,8 @@ We utilize **Github Issues** for issue tracking and contributions. You can contr
 We have a 3 step process that utilizes **Github Issues**:
 
 1. Sign our
-  [Individual Contributor License Agreement (CLA)](https://secure.echosign.com/public/hostedForm?formid=PJIF5694K6L)
-  or [Corporate CLA](https://secure.echosign.com/public/hostedForm?formid=PIE6C7AX856) online once.
+  [Individual Contributor License Agreement (CLA)](http://supermarket.getchef.com/icla-signatures)
+  or [Corporate CLA](http://supermarket.getchef.com/ccla-signatures) online once.
 2. Create a Github Pull Request.
 3. Do [Code Review](#cr) with the **Chef Engineering Team** or **ChefInit Core Committers** on the pull request.
 
@@ -150,30 +150,3 @@ In order to decrease the back and forth an issues and help us get to the bottom 
 ### Actual Result:
 [What actually happens after the reproduction steps?]
 ```
-
-## <a name="release"></a> ChefInit Release Cycles
-
-Our primary shipping vehicle is operating system specific packages that includes
-  all the requirements of ChefInit. We call these [Omnibus packages](https://github.com/opscode/omnibus-ruby)
-
-We also release our software as gems to [Rubygems](http://rubygems.org/) but we strongly
-  recommend using ChefInit packages since they are the only combination of native libraries &
-  gems required by ChefInit that we test throughly.
-
-Our version numbering closely follows [Semantic Versioning](http://semver.org/) standard. Our
-  standard version numbers look like X.Y.Z which mean:
-
-* X is a major release, which may not be fully compatible with prior major releases
-* Y is a minor release, which adds both new features and bug fixes
-* Z is a patch release, which adds just bug fixes
-
-We frequently make `alpha` and `beta` releases with version numbers that look like
-  `X.Y.Z.alpha.0` or `X.Y.Z.beta.1`. These releases are still well tested but not as
-  throughly as **Minor** or **Patch** releases.
-
-We do a `Minor` release approximately every 3 months and `Patch` releases on a when-needed
-  basis for regressions, significant bugs, and security issues.
-
-Announcements of releases are available on [Chef Blog](http://www.getchef.com/blog) when they are
-  available.
-
