@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+require 'json'
 require 'chef/knife'
 require 'knife-container/command'
 
@@ -162,7 +163,7 @@ class Chef
       def first_boot_content
         first_boot = {}
         first_boot['run_list'] = config[:run_list]
-        first_boot.to_json
+        JSON.pretty_generate(first_boot)
       end
 
       def chef_client_mode
