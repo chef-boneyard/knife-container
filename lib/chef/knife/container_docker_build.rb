@@ -18,7 +18,6 @@
 require 'chef/knife'
 require 'knife-container/command'
 require 'chef/mixin/shell_out'
-require 'open3'
 
 class Chef
   class Knife
@@ -59,23 +58,12 @@ class Chef
           exit 1
         end
 
+        # Was --no-berks passed?
         if config[:run_berks].nil?
-          config[:run_berks] = true
-        end
-
-        if config[:run_berks]
-          begin
-            require 'berkshelf'
-            require 'berkshelf/berksfile'
-          rescue LoadError
-            ui.fatal("You must have the Berkshelf gem installed to use the `berks` flag")
-            show_usage
-            exit 1
-          else
-            # other exception
-          ensure
-            # always executed
-          end
+          
+          # If it wasn't passed but berkshelf isn't installed, set false
+          ver = shell_out("berks -v")
+          config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
         end
       end
 
@@ -85,53 +73,66 @@ class Chef
       end
 
       def run_berks
-        dockerfile_dir = File.join(config[:dockerfiles_path], @name_args[0])
-        berks = Berkshelf::Berksfile.from_file(File.join(dockerfile_dir, "Berksfile"))
-        berks.install
-
-        temp_chef_repo = File.join(dockerfile_dir, "chef")
-
-        if File.exists?(File.join(temp_chef_repo, "zero.rb"))
-          run_berks_vendor(berks, temp_chef_repo)
-        elsif File.exists?(File.join(temp_chef_repo, "client.rb"))
-          run_berks_upload(berks, temp_chef_repo)
+        if berksfile_exists?
+          if File.exists?(File.join(chef_repo, "zero.rb"))
+            run_berks_vendor
+          elsif File.exists?(File.join(chef_repo, "client.rb"))
+            run_berks_upload
+          end
         end
       end
 
-      def run_berks_vendor(berks, temp_chef_repo)
-        if File.exists?(File.join(temp_chef_repo, "cookbooks")) 
+      def berksfile_exists?
+        File.exists?(File.join(docker_context, "Berksfile"))
+      end
+
+      def run_berks_install
+        run_command("berks install")
+      end
+
+      def run_berks_vendor
+        if File.exists?(File.join(chef_repo, "cookbooks"))
           if config[:force_build]
-            FileUtils.rm_rf(File.join(temp_chef_repo, "cookbooks"))
+            FileUtils.rm_rf(File.join(chef_repo, "cookbooks"))
           else
             ui.fatal("A `cookbooks` directory already exists. You must either remove this directory from your dockerfile directory or use the `force` flag")
             show_usage
             exit 1
           end
         end
-
-        berks.vendor(File.join(temp_chef_repo, "cookbooks"))
+        
+        run_berks_install
+        run_command("berks vendor #{chef_repo}")
       end
 
-      def run_berks_upload(berks, temp_chef_repo)
+      def run_berks_upload
+        run_berks_install
         if config[:force_build]
-          berks.upload(force: true, freeze: true)
+          run_command("berks upload --force")
         else
-          berks.upload
+          run_command("berks upload")
         end
       end
 
       def build_image
-        Open3.popen2e(docker_build_command) do |stdin, stdout_err, wait_thr|
-          while line = stdout_err.gets
-            puts line
-          end
-          wait_thr.value
-        end
+        run_command(docker_build_command)
       end
 
       def docker_build_command
-        "docker build -t #{@name_args[0]} #{config[:dockerfiles_path]}/#{@name_args[0]}"
+        "docker build -t #{@name_args[0]} #{docker_context}"
       end
-    end 
+
+      def run_command(cmd)
+        shell_out(cmd, cwd: docker_context)
+      end
+
+      def docker_context
+        File.join(config[:dockerfiles_path], @name_args[0])
+      end
+
+      def chef_repo
+        File.join(docker_context, "chef")
+      end
+    end
   end
 end

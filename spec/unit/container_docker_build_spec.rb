@@ -17,13 +17,12 @@
 
 require 'spec_helper'
 require 'chef/knife/container_docker_build'
-require 'berkshelf'
-require 'berkshelf/berksfile'
 
 describe Chef::Knife::ContainerDockerBuild do
 
   let(:stdout_io) { StringIO.new }
   let(:stderr_io) { StringIO.new }
+  let(:argv) { %w[ docker/demo ] }
 
   def stdout
     stdout_io.string
@@ -40,11 +39,6 @@ describe Chef::Knife::ContainerDockerBuild do
   end
 
   describe "#run" do
-
-    before(:each) do
-      knife.stub(:run_berks)
-      knife.stub(:build_image)
-    end
 
     context "by default" do
       let(:argv) { %w[ docker/demo ] }
@@ -78,7 +72,33 @@ describe Chef::Knife::ContainerDockerBuild do
       it 'should should print usage and exit' do
         knife.should_receive(:show_usage)
         knife.ui.should_receive(:fatal)
-        lambda { knife.run }.should raise_error(SystemExit)
+        lambda { knife.read_and_validate_params }.should raise_error(SystemExit)
+      end
+    end
+
+    context "--no-berks was not passed" do
+      let(:argv) { %w[ docker/demo ] }
+
+      context "and Berkshelf is not installed" do
+        let(:berks_output) { double("berks -v output", stdout: "berks not found") }
+        
+        before do
+          knife.stub(:shell_out).with("berks -v").and_return(berks_output)
+        end
+
+        it 'should set run_berks to false' do
+          knife.read_and_validate_params
+          knife.config[:run_berks].should eql(false)
+        end
+      end
+
+      context "and Berkshelf is installed" do
+        let(:berks_output) { double("berks -v output", stdout: "3.1.1") }
+
+        it 'should set run_berks to true' do
+          knife.read_and_validate_params
+          knife.config[:run_berks].should eql(true)
+        end
       end
     end
   end
@@ -87,8 +107,6 @@ describe Chef::Knife::ContainerDockerBuild do
     before do
       Chef::Config.reset
       Chef::Config[:chef_repo_path] = tempdir
-      knife.stub(:run_berks)
-      knife.stub(:build_image)
     end
 
     let(:argv) { %w[ docker/demo ]}
@@ -96,7 +114,7 @@ describe Chef::Knife::ContainerDockerBuild do
     context 'Chef::Config[:dockerfiles_path] has not been set' do
       it 'sets dockerfiles_path to Chef::Config[:chef_repo_path]/dockerfiles' do
         $stdout.stub(:write)
-        knife.run
+        knife.setup_config_defaults
         knife.config[:dockerfiles_path].should eql("#{Chef::Config[:chef_repo_path]}/dockerfiles")
       end
     end
@@ -106,35 +124,35 @@ describe Chef::Knife::ContainerDockerBuild do
 
     let(:argv) { %W[ docker/local ] }
 
-    let(:berks) { double("berks", :install => nil, :upload => nil, :vendor => nil) }
-
     before(:each) do
      Chef::Config.reset
      Chef::Config[:chef_repo_path] = tempdir
      Chef::Config[:knife][:dockerfiles_path] = default_dockerfiles_path
-     Berkshelf::Berksfile.stub(:from_file).and_return(berks)
-     knife.stub(:build_image)
-     knife.stub(:run_berks_vendor)
-     knife.stub(:run_berks_upload)
     end
 
     let(:docker_context) { File.join(Chef::Config[:knife][:dockerfiles_path], 'docker', 'local') }
 
-    it "should run a berks install" do
-      Berkshelf::Berksfile.should_receive(:from_file).with(File.join(docker_context, 'Berksfile'))
-      berks.should_receive(:install)
-      knife.run
+    context "when there is no Berksfile" do
+      before { knife.stub(:berksfile_exists?).and_return(false) }
+
+      it "returns doing nothing" do
+        knife.should_not_receive(:run_berks_vendor)
+        knife.should_not_receive(:run_berks_upload)
+        knife.run_berks
+      end
     end
 
     context "when docker image was init in local mode" do
       before do
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'zero.rb')).and_return(true)
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'client.rb')).and_return(false)
+        knife.stub(:chef_repo).and_return(File.join(docker_context, "chef"))
+        knife.stub(:berksfile_exists?).and_return(true)
       end
 
       it 'should call run_berks_vendor' do
         knife.should_receive(:run_berks_vendor)
-        knife.run
+        knife.run_berks
       end
     end
 
@@ -142,29 +160,35 @@ describe Chef::Knife::ContainerDockerBuild do
       before do
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'zero.rb')).and_return(false)
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'client.rb')).and_return(true)
+        knife.stub(:chef_repo).and_return(File.join(docker_context, "chef"))
+        knife.stub(:berksfile_exists?).and_return(true)
       end
 
       it 'should call run_berks_upload' do
         knife.should_receive(:run_berks_upload)
-        knife.run
+        knife.run_berks
       end
     end
   end
 
-  describe "#run_berks_vendor" do
-    let(:argv) { %w[ docker/demo ] }
+  describe "#run_berks_install" do
+    it "should call `berks install`" do
+      knife.should_receive(:run_command).with("berks install")
+      knife.run_berks_install
+    end
+  end
 
-    let(:berks) { double("berks", :install => nil, :upload => nil, :vendor => nil) }
+  describe "#run_berks_vendor" do
 
     before(:each) do
      Chef::Config.reset
      Chef::Config[:chef_repo_path] = tempdir
      Chef::Config[:knife][:dockerfiles_path] = default_dockerfiles_path
-     Berkshelf::Berksfile.stub(:from_file).and_return(berks)
-     Berkshelf::Berksfile.stub(:vendor)
+     knife.stub(:docker_context).and_return(File.join(default_dockerfiles_path, 'docker', 'demo'))
+     knife.stub(:run_berks_install)
     end
 
-    let(:docker_context) { File.join(Chef::Config[:knife][:dockerfiles_path], 'docker', 'local') }
+    let(:docker_context) { File.join(Chef::Config[:knife][:dockerfiles_path], 'docker', 'demo') }
 
     context "cookbooks directory already exists in docker context" do
       before do
@@ -176,8 +200,9 @@ describe Chef::Knife::ContainerDockerBuild do
 
         it "should delete the existing cookbooks directory and run berks.vendor" do
           FileUtils.should_receive(:rm_rf).with(File.join(docker_context, 'chef', 'cookbooks'))
-          berks.should_receive(:vendor).with(File.join(docker_context, 'chef', 'cookbooks'))
-          knife.run_berks_vendor(berks, File.join(docker_context, 'chef'))
+          knife.should_receive(:run_berks_install)
+          knife.should_receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+          knife.run_berks_vendor
         end
 
       end
@@ -188,7 +213,7 @@ describe Chef::Knife::ContainerDockerBuild do
         it "should error out" do
           $stdout.stub(:write)
           $stderr.stub(:write)
-          lambda { knife.run_berks_vendor(berks, File.join(docker_context, 'chef')) }.should raise_error(SystemExit)
+          lambda { knife.run_berks_vendor }.should raise_error(SystemExit)
         end
       end
     end
@@ -199,21 +224,20 @@ describe Chef::Knife::ContainerDockerBuild do
       end
 
       it "should call berks.vendor" do
-        berks.should_receive(:vendor).with(File.join(docker_context, 'chef', 'cookbooks'))
-        knife.run_berks_vendor(berks, File.join(docker_context, 'chef'))
+        knife.should_receive(:run_berks_install)
+        knife.should_receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+        knife.run_berks_vendor
       end
     end
   end
 
   describe "#run_berks_upload" do
-    let(:argv) { %w[ docker/demo ] }
-
-    let(:berks) { double("berks", :install => nil, :upload => nil, :vendor => nil) }
-
     before(:each) do
      Chef::Config.reset
      Chef::Config[:chef_repo_path] = tempdir
      Chef::Config[:knife][:dockerfiles_path] = default_dockerfiles_path
+     knife.stub(:docker_context).and_return(File.join(default_dockerfiles_path, 'docker', 'demo'))
+     knife.stub(:run_berks_install)
     end
 
     let(:docker_context) { File.join(Chef::Config[:knife][:dockerfiles_path], 'docker', 'local') }
@@ -222,9 +246,15 @@ describe Chef::Knife::ContainerDockerBuild do
       before do
         knife.config[:force_build] = false
       end
-      it "should run berks.upload" do
-        berks.should_receive(:upload)
-        knife.run_berks_upload(berks, File.join(docker_context, 'chef'))
+
+      it "should call berks install" do
+        knife.should_receive(:run_berks_install)
+        knife.run_berks_upload
+      end
+
+      it "should run berks upload" do
+        knife.should_receive(:run_command).with("berks upload")
+        knife.run_berks_upload
       end
     end
 
@@ -232,9 +262,10 @@ describe Chef::Knife::ContainerDockerBuild do
       before do
         knife.config[:force_build] = true
       end
-      it "should run berks.upload with force" do
-        berks.should_receive(:upload).with(force:true, freeze:true)  
-        knife.run_berks_upload(berks, File.join(docker_context, 'chef'))
+
+      it "should run berks upload with force" do
+        knife.should_receive(:run_command).with("berks upload --force")
+        knife.run_berks_upload
       end
     end
   end
