@@ -60,6 +60,14 @@ class Chef
         :long => "--validation-client-name NAME",
         :description => "The name of the validation client, typically a client named chef-validator"
 
+      option :trusted_certs_dir, 
+        :long => "--trusted-certs PATH",
+        :description => "The path to the directory containing trusted certs"
+
+      option :encrypted_data_bag_secret, 
+        :long => "--secret-file SECRET_FILE", 
+        :description => "A file containing the secret key to use to encrypt data bag item values"
+
       option :chef_server_url,
         :long => "--server-url URL",
         :description => "Chef Server URL"
@@ -123,6 +131,8 @@ class Chef
           validation_key
           validation_client_name
           chef_server_url
+          trusted_certs_dir
+          encrypted_data_bag_secret
           cookbook_path
           node_path
           role_path

@@ -179,7 +179,8 @@ describe Chef::Knife::ContainerDockerInit do
         @knife.read_and_validate_params
         @knife.set_config_defaults
         @knife.setup_context
-        expect(generator_context.first_boot).to include('"run_list":["recipe[apt]","recipe[nginx]"]')
+        first_boot = { run_list: ["recipe[apt]", "recipe[nginx]"]}
+        expect(generator_context.first_boot).to include(JSON.pretty_generate(first_boot))
       end
     end
   end
@@ -271,7 +272,7 @@ describe Chef::Knife::ContainerDockerInit do
         chef/zero.rb
         chef/cookbooks/nginx
         chef/ohai/hints
-        chef/ohai/plugins/docker_container.rb
+        chef/ohai_plugins/docker_container.rb
       ]
     end
 
@@ -319,6 +320,7 @@ describe Chef::Knife::ContainerDockerInit do
     before do
      Chef::Config.reset
      Chef::Config[:chef_repo_path] = tempdir
+     Chef::Config[:trusted_certs_dir] = File.join(tempdir, ".chef", "trusted_certs")
     end
 
     let(:argv) { %W[
@@ -339,7 +341,8 @@ describe Chef::Knife::ContainerDockerInit do
         chef/client.rb
         chef/validation.pem
         chef/ohai/hints
-        chef/ohai/plugins/docker_container.rb
+        chef/ohai_plugins/docker_container.rb
+        chef/trusted_certs/chef_example_com.crt
       ]
     end
 
