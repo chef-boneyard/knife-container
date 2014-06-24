@@ -19,7 +19,7 @@ template File.join(dockerfile_dir, "Dockerfile") do
 end
 
 
-## 
+##
 # Initial Chef Setup
 #
 
@@ -95,6 +95,7 @@ if context.chef_client_mode == "zero"
   else
     log "Source cookbook directory not found."
   end
+
   %w(role environment node).each do |dir|
     path = context.send(:"#{dir}_path")
     if path.kind_of?(Array)
@@ -114,7 +115,7 @@ end
 ##
 # Server Only Stuff
 #
-if context.chef_client_mode == "client" 
+if context.chef_client_mode == "client"
 
   # Add validation.pem
   file File.join(temp_chef_repo, "validation.pem") do
@@ -123,10 +124,18 @@ if context.chef_client_mode == "client"
   end
 
   # Copy over trusted certs
-  unless Dir["#{config[:trusted_certs_dir]}/*"].empty?
+  unless Dir["#{context.trusted_certs_dir}/*"].empty?
     directory File.join(temp_chef_repo, "trusted_certs")
     execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, "trusted_certs/")}"
   end
+
+  # Copy over encrypted_data_bag_key
+  file File.join(temp_chef_repo, "encrypted_data_bag_secret") do
+   content File.read(context.encrypted_data_bag_secret)
+   mode '0600'
+   only_if { File.exists?(File.join(context.encrypted_data_bag_secret)) }
+  end
+
 end
 
 ##
@@ -147,4 +156,3 @@ cookbook_file File.join(temp_chef_repo, "ohai_plugins", "docker_container.rb") d
   source "plugins/docker_container.rb"
   mode "0755"
 end
-

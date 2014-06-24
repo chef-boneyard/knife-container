@@ -160,7 +160,7 @@ describe Chef::Knife::ContainerDockerInit do
         @knife.set_config_defaults
         @knife.setup_context
         expect(generator_context.run_list).to eq([])
-      end        
+      end
       it 'sets chef_client_mode to client' do
         @knife.read_and_validate_params
         @knife.set_config_defaults
@@ -168,7 +168,7 @@ describe Chef::Knife::ContainerDockerInit do
         expect(generator_context.chef_client_mode).to eq("client")
       end
     end
-    
+
     context 'while passing a run list' do
       let(:argv) { %W[
         docker/demo
@@ -247,7 +247,7 @@ describe Chef::Knife::ContainerDockerInit do
       @knife.chef_runner.stub(:stdout).and_return(stdout_io)
       @knife.run
       expect(stdout).to include('log[Source cookbook directory not found.] action write')
-    end      
+    end
   end
 
   describe "when executed in local mode" do
@@ -263,7 +263,7 @@ describe Chef::Knife::ContainerDockerInit do
       -z
       -b
     ]}
-    
+
     let(:expected_container_file_relpaths) do
       %w[
         Dockerfile
@@ -313,14 +313,15 @@ describe Chef::Knife::ContainerDockerInit do
         expect(stdout).to include("execute[cp -rf #{default_cookbook_path}/nginx #{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/chef/cookbooks/] action run")
         expect(stdout).not_to include("execute[cp -rf #{default_cookbook_path}/dummy #{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/chef/cookbooks/] action run")
       end
-    end     
+    end
   end
 
   describe "executed in server mode" do
     before do
      Chef::Config.reset
      Chef::Config[:chef_repo_path] = tempdir
-     Chef::Config[:trusted_certs_dir] = File.join(tempdir, ".chef", "trusted_certs")
+     Chef::Config[:trusted_certs_dir] = File.join(fixtures_path, ".chef", "trusted_certs")
+     Chef::Config[:encrypted_data_bag_secret] = File.join(fixtures_path, ".chef", "encrypted_data_bag_secret")
     end
 
     let(:argv) { %W[
@@ -332,6 +333,7 @@ describe Chef::Knife::ContainerDockerInit do
       --validation-key #{fixtures_path}/.chef/validation.pem
       --validation-client-name masterchef
       --server-url http://localhost:4000
+      --secret-file #{fixtures_path}/.chef/encrypted_data_bag_secret
     ]}
 
     let(:expected_container_file_relpaths) do
@@ -343,6 +345,7 @@ describe Chef::Knife::ContainerDockerInit do
         chef/ohai/hints
         chef/ohai_plugins/docker_container.rb
         chef/trusted_certs/chef_example_com.crt
+        chef/encrypted_data_bag_secret
       ]
     end
 
@@ -351,7 +354,7 @@ describe Chef::Knife::ContainerDockerInit do
         File.join(Chef::Config[:chef_repo_path], "dockerfiles", "docker/demo", relpath)
       end
     end
-    
+
     subject(:docker_init) { Chef::Knife::DockerInit.new(argv) }
 
     it "configures the Generator context" do
@@ -366,6 +369,19 @@ describe Chef::Knife::ContainerDockerInit do
       expect(generator_context.chef_server_url).to eq("http://localhost:4000")
       expect(generator_context.validation_client_name).to eq("masterchef")
       expect(generator_context.validation_key).to eq("#{fixtures_path}/.chef/validation.pem")
+      expect(generator_context.trusted_certs_dir).to eq("#{fixtures_path}/.chef/trusted_certs")
+      expect(generator_context.encrypted_data_bag_secret).to eq("#{fixtures_path}/.chef/encrypted_data_bag_secret")
+    end
+    
+    it "creates a folder to manage the Dockerfile and Chef files" do
+      Dir.chdir(Chef::Config[:chef_repo_path]) do
+        @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+        @knife.run
+      end
+      generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
+      expected_files.each do |expected_file|
+        expect(generated_files).to include(expected_file)
+      end
     end
   end
 end

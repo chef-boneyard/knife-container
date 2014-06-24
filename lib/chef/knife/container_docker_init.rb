@@ -39,7 +39,7 @@ class Chef
         :description => "Comma seperated list of roles/recipes to apply to your Docker image",
         :proc => Proc.new { |o| o.split(/[\s,]+/) }
 
-      option :local_mode, 
+      option :local_mode,
         :boolean => true,
         :short => "-z",
         :long => "--local-mode",
@@ -60,12 +60,12 @@ class Chef
         :long => "--validation-client-name NAME",
         :description => "The name of the validation client, typically a client named chef-validator"
 
-      option :trusted_certs_dir, 
+      option :trusted_certs_dir,
         :long => "--trusted-certs PATH",
         :description => "The path to the directory containing trusted certs"
 
-      option :encrypted_data_bag_secret, 
-        :long => "--secret-file SECRET_FILE", 
+      option :encrypted_data_bag_secret,
+        :long => "--secret-file SECRET_FILE",
         :description => "A file containing the secret key to use to encrypt data bag item values"
 
       option :chef_server_url,
@@ -162,6 +162,8 @@ class Chef
         generator_context.chef_server_url = config[:chef_server_url]
         generator_context.validation_key = config[:validation_key]
         generator_context.validation_client_name = config[:validation_client_name]
+        generator_context.trusted_certs_dir = config[:trusted_certs_dir]
+        generator_context.encrypted_data_bag_secret = config[:encrypted_data_bag_secret]
         generator_context.first_boot = first_boot_content
         generator_context.generate_berksfile = config[:generate_berksfile]
       end
