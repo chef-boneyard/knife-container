@@ -18,6 +18,7 @@
 require 'json'
 require 'chef/knife'
 require 'knife-container/command'
+require 'chef/mixin/shell_out'
 
 class Chef
   class Knife
@@ -103,6 +104,7 @@ class Chef
         set_config_defaults
         setup_context
         chef_runner.converge
+        download_and_tag_base_image
       end
 
       def read_and_validate_params
@@ -141,7 +143,7 @@ class Chef
           config[:"#{var}"] ||= Chef::Config[:"#{var}"]
         end
 
-        config[:base_image] ||= "chef/ubuntu_12.04"
+        config[:base_image] ||= "chef/ubuntu-12.04:latest"
 
         config[:run_list] ||= []
 
@@ -180,6 +182,11 @@ class Chef
 
       def chef_client_mode
         config[:local_mode] ? "zero" : "client"
+      end
+
+      def download_and_tag_base_image
+        shell_out("docker pull #{config[:base_image]}")
+        shell_out("docker tag #{config[:base_image]} #{@name_args[0]}")
       end
 
     end

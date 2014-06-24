@@ -38,7 +38,20 @@ describe Chef::Knife::ContainerDockerInit do
   before(:each) do
     @knife = Chef::Knife::ContainerDockerInit.new(argv)
     @knife.stub(:output).and_return(true)
+    @knife.stub(:download_and_tag_base_image)
     KnifeContainer::Generator.reset
+  end
+
+  describe '#run' do
+    let(:argv) { %w[ docker/demo ] }
+    it "should run things" do
+      @knife.should_receive(:read_and_validate_params)
+      @knife.should_receive(:set_config_defaults)
+      @knife.should_receive(:setup_context)
+      @knife.chef_runner.should_receive(:converge)
+      @knife.should_receive(:download_and_tag_base_image)
+      @knife.run
+    end
   end
 
   describe 'when reading and validating parameters' do
@@ -149,11 +162,11 @@ describe Chef::Knife::ContainerDockerInit do
         docker/demo
       ]}
 
-      it 'sets the default base_image to chef/ubuntu_12.04' do
+      it 'sets the default base_image to chef/ubuntu-12.04:latest' do
         @knife.read_and_validate_params
         @knife.set_config_defaults
         @knife.setup_context
-        expect(generator_context.base_image).to eq("chef/ubuntu_12.04")
+        expect(generator_context.base_image).to eq("chef/ubuntu-12.04:latest")
       end
       it 'sets the runlist to an empty array' do
         @knife.read_and_validate_params
@@ -229,7 +242,6 @@ describe Chef::Knife::ContainerDockerInit do
   end
 
   describe "when executed without a valid cookbook path" do
-
     before(:each) do
      Chef::Config.reset
      Chef::Config[:chef_repo_path] = tempdir
@@ -289,7 +301,7 @@ describe Chef::Knife::ContainerDockerInit do
       expect(generator_context.dockerfile_name).to eq("docker/demo")
       expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
       expect(generator_context.cookbook_path).to eq([default_cookbook_path])
-      expect(generator_context.base_image).to eq("chef/ubuntu_12.04")
+      expect(generator_context.base_image).to eq("chef/ubuntu-12.04:latest")
       expect(generator_context.chef_client_mode).to eq("zero")
       expect(generator_context.run_list).to eq(%w[recipe[nginx]])
       expect(generator_context.generate_berksfile).to eq(true)
@@ -326,7 +338,7 @@ describe Chef::Knife::ContainerDockerInit do
 
     let(:argv) { %W[
       docker/demo
-      -f ubuntu:12.04
+      -f chef/ubuntu-12.04:11.12.8
       --cookbook-path #{default_cookbook_path}
       -r recipe[nginx]
       -d #{tempdir}/dockerfiles
@@ -363,7 +375,7 @@ describe Chef::Knife::ContainerDockerInit do
       @knife.setup_context
       expect(generator_context.dockerfile_name).to eq("docker/demo")
       expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
-      expect(generator_context.base_image).to eq("ubuntu:12.04")
+      expect(generator_context.base_image).to eq("chef/ubuntu-12.04:11.12.8")
       expect(generator_context.chef_client_mode).to eq("client")
       expect(generator_context.run_list).to eq(%w[recipe[nginx]])
       expect(generator_context.chef_server_url).to eq("http://localhost:4000")
@@ -372,7 +384,7 @@ describe Chef::Knife::ContainerDockerInit do
       expect(generator_context.trusted_certs_dir).to eq("#{fixtures_path}/.chef/trusted_certs")
       expect(generator_context.encrypted_data_bag_secret).to eq("#{fixtures_path}/.chef/encrypted_data_bag_secret")
     end
-    
+
     it "creates a folder to manage the Dockerfile and Chef files" do
       Dir.chdir(Chef::Config[:chef_repo_path]) do
         @knife.chef_runner.stub(:stdout).and_return(stdout_io)
@@ -382,6 +394,18 @@ describe Chef::Knife::ContainerDockerInit do
       expected_files.each do |expected_file|
         expect(generated_files).to include(expected_file)
       end
+    end
+  end
+
+  describe "#download_and_tag_base_image" do
+    before { @knife.unstub(:download_and_tag_base_image) }
+    let(:argv) { %w[ docker/demo ] }
+    it "should run docker pull on the specified base image and tag it with the dockerfile name" do
+      @knife.should_receive(:shell_out).with("docker pull chef/ubuntu-12.04:latest")
+      @knife.should_receive(:shell_out).with("docker tag chef/ubuntu-12.04:latest docker/demo")
+      @knife.read_and_validate_params
+      @knife.set_config_defaults
+      @knife.download_and_tag_base_image
     end
   end
 end
