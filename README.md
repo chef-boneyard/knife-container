@@ -5,15 +5,8 @@ This is the official Chef plugin for Linux Containers. This plugin gives knife t
 
 ## Installation
 
-If you’re using bundler, simply add Chef and Knife Container to your `Gemfile`
-    gem 'chef'
-    gem 'knife-container'
-
-If you’re not using bundler, you can install the gem manually. Be sure you are running Chef 0.10.10 or higher, as earlier versions do not support plugins.
-    $ gem install knife-container
-
 ### Build Locally
-If you would like to build the gem from source locally, please clone this repository on to your local machine and build the gem locally. 
+If you would like to build the gem from source locally, please clone this repository on to your local machine and build the gem locally.
     $ bundle install
     $ bundle exec rake install
 
@@ -66,4 +59,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
