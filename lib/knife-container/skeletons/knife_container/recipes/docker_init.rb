@@ -125,7 +125,7 @@ if context.chef_client_mode == "client"
   # Copy over trusted certs
   unless Dir["#{config[:trusted_certs_dir]}/*"].empty?
     directory File.join(temp_chef_repo, "trusted_certs")
-    execute "cp -r #{config[:trusted_certs_dir]}/* #{File.join(temp_chef_repo, "trusted_certs/")}"
+    execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, "trusted_certs/")}"
   end
 end
 

@@ -33,6 +33,7 @@ module KnifeContainer
       attr_accessor :chef_server_url
       attr_accessor :validation_key
       attr_accessor :validation_client_name
+      attr_accessor :trusted_certs_dir
       attr_accessor :first_boot
       attr_accessor :berksfile
       attr_accessor :generate_berksfile
@@ -70,6 +71,7 @@ module KnifeContainer
       delegate_to_app_context :chef_server_url
       delegate_to_app_context :validation_key
       delegate_to_app_context :validation_client_name
+      delegate_to_app_context :trusted_certs_dir
       delegate_to_app_context :first_boot
       delegate_to_app_context :berksfile
       delegate_to_app_context :generate_berksfile
