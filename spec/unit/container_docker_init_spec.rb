@@ -49,6 +49,7 @@ describe Chef::Knife::ContainerDockerInit do
       @knife.should_receive(:set_config_defaults)
       @knife.should_receive(:setup_context)
       @knife.chef_runner.should_receive(:converge)
+      @knife.should_receive(:eval_current_system)
       @knife.should_receive(:download_and_tag_base_image)
       @knife.run
     end
@@ -406,6 +407,41 @@ describe Chef::Knife::ContainerDockerInit do
       @knife.read_and_validate_params
       @knife.set_config_defaults
       @knife.download_and_tag_base_image
+    end
+  end
+
+  describe '#eval_current_system' do
+    let(:argv) { %w[ docker/demo ] }
+
+    context 'the context already exists' do
+      before do
+        Chef::Config.reset
+        Chef::Config[:chef_repo_path] = tempdir
+        File.stub(:exists?).with(File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo')).and_return(true)
+        @knife.config[:dockerfiles_path] = File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
+      end
+
+      it 'should warn the user if the context they are trying to create already exists' do
+        @knife.should_receive(:show_usage)
+        @knife.ui.should_receive(:fatal)
+        lambda { @knife.eval_current_system }.should raise_error(SystemExit)
+      end
+    end
+
+    context 'the context already exists but the force flag was specified' do
+      let(:argv) { %w[ docker/demo --force ] }
+
+      before do
+        Chef::Config.reset
+        Chef::Config[:chef_repo_path] = tempdir
+        File.stub(:exists?).with(File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo')).and_return(true)
+        @knife.config[:dockerfiles_path] = File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
+      end
+
+      it 'should delete that folder and proceed as normal' do
+        FileUtils.should_receive(:rm_rf).with(File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo'))
+        @knife.eval_current_system
+      end
     end
   end
 end

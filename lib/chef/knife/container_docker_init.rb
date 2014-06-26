@@ -73,6 +73,11 @@ class Chef
         :long => "--server-url URL",
         :description => "Chef Server URL"
 
+      option :force,
+        :long => "--force",
+        :boolean => true,
+        :desription => "Will overwrite existing Docker Contexts"
+
       option :cookbook_path,
         :long => "--cookbook-path PATH[:PATH]",
         :description => "A colon-seperated path to look for cookbooks",
@@ -102,6 +107,7 @@ class Chef
       def run
         read_and_validate_params
         set_config_defaults
+        eval_current_system
         setup_context
         chef_runner.converge
         download_and_tag_base_image
@@ -113,6 +119,7 @@ class Chef
           ui.fatal("You must specify a Dockerfile name")
           exit 1
         end
+
         if config[:generate_berksfile]
           begin
             require 'berkshelf'
@@ -120,10 +127,6 @@ class Chef
             show_usage
             ui.fatal("You must have the Berkshelf gem installed to use the Berksfile flag.")
             exit 1
-          else
-            # other exception
-          ensure
-            # always executed
           end
         end
       end
@@ -189,6 +192,17 @@ class Chef
         shell_out("docker tag #{config[:base_image]} #{@name_args[0]}")
       end
 
+      def eval_current_system
+        if File.exists?(File.join(config[:dockerfiles_path], @name_args[0]))
+          if config[:force]
+            FileUtils.rm_rf(File.join(config[:dockerfiles_path], @name_args[0]))
+          else
+            show_usage
+            ui.fatal("The Docker Context you are trying to create already exists. Please use the --force flag if you would like to re-create this context.")
+            exit 1
+          end
+        end
+      end
     end
   end
 end
