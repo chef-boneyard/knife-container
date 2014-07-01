@@ -81,19 +81,23 @@ if context.chef_client_mode == "zero"
       if File.exists?(File.expand_path(dir))
         directory "#{temp_chef_repo}/cookbooks"
         cookbooks.each do |cookbook|
-          execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
+          execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
+            only_if { File.exists?("#{File.expand_path(dir)}/#{cookbook}") }
+          end
         end
       else
-        log "Source cookbook directory not found."
+        log "Could not find a 'cookbooks' directory in your chef-repo."
       end
     end
   elsif File.exists?(File.expand_path(cookbook_dir))
     directory "#{temp_chef_repo}/cookbooks"
-    context.send(:run_list).each do |cookbook|
-      execute "cp -rf #{File.expand_path(cookbook_dir)}/#{cookbook.match(/recipe\[(.*)\]/)[1]} #{temp_chef_repo}/cookbooks/"
+    cookbooks.each do |cookbook|
+      execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
+        only_if { File.exists?("#{File.expand_path(dir)}/#{cookbook}") }
+      end
     end
   else
-    log "Source cookbook directory not found."
+    log "Could not find a 'cookbooks' directory in your chef-repo."
   end
 
   %w(role environment node).each do |dir|

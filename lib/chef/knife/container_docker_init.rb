@@ -25,6 +25,7 @@ class Chef
     class ContainerDockerInit < Knife
 
       include KnifeContainer::Command
+      include Chef::Mixin::ShellOut
 
       banner "knife container docker init REPO/NAME [options]"
 
