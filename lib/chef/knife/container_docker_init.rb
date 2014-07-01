@@ -194,6 +194,7 @@ class Chef
       end
 
       def eval_current_system
+        # Check to see if the Docker context already exists.
         if File.exists?(File.join(config[:dockerfiles_path], @name_args[0]))
           if config[:force]
             FileUtils.rm_rf(File.join(config[:dockerfiles_path], @name_args[0]))

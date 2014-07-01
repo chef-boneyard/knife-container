@@ -44,7 +44,7 @@ end
 # Resolve run list
 #
 require 'chef/run_list/run_list_item'
-run_list_items = context.send(:run_list).map { |i| Chef::RunList::RunListItem.new(i) }
+run_list_items = context.run_list.map { |i| Chef::RunList::RunListItem.new(i) }
 cookbooks = []
 
 run_list_items.each do |item|
@@ -69,15 +69,14 @@ unless context.run_list.empty?
   end
 end
 
-# Symlink the necessary directories into the temp chef-repo (if local-mode)
+# Copy over the necessary directories into the temp chef-repo (if local-mode)
 if context.chef_client_mode == "zero"
-  cookbook_dir = context.send(:cookbook_path)
-  role_dir = context.send(:role_path)
-  env_dir = context.send(:environment_path)
-  node_dir = context.send(:node_path)
 
-  if cookbook_dir.kind_of?(Array)
-    cookbook_dir.each do |dir|
+  # Copy over cookbooks that are mentioned in the runlist. There is a gap here
+  # that dependent cookbooks are not copied. This is a result of not having a
+  # depsolver in the chef-client. The solution here is to use the Berkshelf integration.
+  if context.cookbook_path.kind_of?(Array)
+    context.cookbook_path.each do |dir|
       if File.exists?(File.expand_path(dir))
         directory "#{temp_chef_repo}/cookbooks"
         cookbooks.each do |cookbook|
@@ -86,20 +85,22 @@ if context.chef_client_mode == "zero"
           end
         end
       else
-        log "Could not find a 'cookbooks' directory in your chef-repo."
+        log "Could not find a '#{File.expand_path(dir)}' directory in your chef-repo."
       end
     end
-  elsif File.exists?(File.expand_path(cookbook_dir))
+  elsif File.exists?(File.expand_path(context.cookbook_path))
     directory "#{temp_chef_repo}/cookbooks"
     cookbooks.each do |cookbook|
-      execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
-        only_if { File.exists?("#{File.expand_path(dir)}/#{cookbook}") }
+      execute "cp -rf #{File.expand_path(context.cookbook_path)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
+        only_if { File.exists?("#{File.expand_path(context.cookbook_path)}/#{cookbook}") }
       end
     end
   else
-    log "Could not find a 'cookbooks' directory in your chef-repo."
+    log "Could not find a '#{File.expand_path(context.cookbook_path)}' directory in your chef-repo."
   end
 
+  # Because they have a smaller footprint, we will copy over all the roles, environments
+  # and nodes. This behavior will likely change in a future version of knife-container.
   %w(role environment node).each do |dir|
     path = context.send(:"#{dir}_path")
     if path.kind_of?(Array)

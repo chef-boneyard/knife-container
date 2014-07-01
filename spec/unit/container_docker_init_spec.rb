@@ -259,7 +259,7 @@ describe Chef::Knife::ContainerDockerInit do
       Chef::Config[:cookbook_path] = '/tmp/nil/cookbooks'
       @knife.chef_runner.stub(:stdout).and_return(stdout_io)
       @knife.run
-      expect(stdout).to include('log[Source cookbook directory not found.] action write')
+      expect(stdout).to include('log[Could not find a \'/tmp/nil/cookbooks\' directory in your chef-repo.] action write')
     end
   end
 
