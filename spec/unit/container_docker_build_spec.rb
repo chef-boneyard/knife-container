@@ -269,4 +269,16 @@ describe Chef::Knife::ContainerDockerBuild do
       end
     end
   end
+
+  describe "#docker_build_command" do
+    let(:argv) { %W[ docker/demo ] }
+
+    before(:each) do
+     knife.config[:dockerfiles_path] = default_dockerfiles_path
+    end
+
+    it "should return valid command" do
+      expect(knife.docker_build_command).to eql("CHEF_NODE_NAME='docker/demo-build' docker build -t docker/demo #{default_dockerfiles_path}/docker/demo")
+    end
+  end
 end
