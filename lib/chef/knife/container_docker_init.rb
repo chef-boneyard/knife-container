@@ -105,6 +105,9 @@ class Chef
         :description => "Path to the directory where Docker contexts are kept",
         :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
+      #
+      # Run the plugin
+      #
       def run
         read_and_validate_params
         set_config_defaults
@@ -114,6 +117,9 @@ class Chef
         download_and_tag_base_image
       end
 
+      #
+      # Read and validate the parameters
+      #
       def read_and_validate_params
         if @name_args.length < 1
           show_usage
@@ -132,6 +138,12 @@ class Chef
         end
       end
 
+      #
+      # Set default configuration values
+      #   We do this here and not in the option syntax because the Chef::Config
+      #   is not available to us at that point. It also gives us a space to set
+      #   other defaults.
+      #
       def set_config_defaults
         %w(
           validation_key
@@ -155,6 +167,9 @@ class Chef
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
       end
 
+      #
+      # Setup the generator context
+      #
       def setup_context
         generator_context.dockerfile_name = @name_args[0]
         generator_context.dockerfiles_path = config[:dockerfiles_path]
@@ -174,25 +189,46 @@ class Chef
         generator_context.generate_berksfile = config[:generate_berksfile]
       end
 
+      #
+      # The name of the recipe to use
+      #
+      # @return [String]
+      #
       def recipe
         "docker_init"
       end
 
+      #
+      # Generate the JSON object for our first-boot.json
+      #
+      # @return [String]
+      #
       def first_boot_content
         first_boot = {}
         first_boot['run_list'] = config[:run_list]
         JSON.pretty_generate(first_boot)
       end
 
+      #
+      # Return the mode in which to run: zero or client
+      #
+      # @return [String]
+      #
       def chef_client_mode
         config[:local_mode] ? "zero" : "client"
       end
 
+      #
+      # Download the base Docker image and tag it with the image name
+      #
       def download_and_tag_base_image
         shell_out("docker pull #{config[:base_image]}")
         shell_out("docker tag #{config[:base_image]} #{@name_args[0]}")
       end
 
+      #
+      # Run some evaluations on the system to make sure it is in the state we need.
+      #
       def eval_current_system
         # Check to see if the Docker context already exists.
         if File.exists?(File.join(config[:dockerfiles_path], @name_args[0]))

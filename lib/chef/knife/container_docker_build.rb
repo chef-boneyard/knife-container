@@ -44,6 +44,9 @@ class Chef
         :description => "Path to the directory where Docker contexts are kept",
         :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
+      #
+      # Run the plugin
+      #
       def run
         read_and_validate_params
         setup_config_defaults
@@ -51,6 +54,10 @@ class Chef
         build_image
       end
 
+      #
+      # Reads the input parameters and validates them.
+      # Will exit if it encounters an error
+      #
       def read_and_validate_params
         if @name_args.length < 1
           ui.fatal("You must specify a Dockerfile name")
@@ -60,18 +67,24 @@ class Chef
 
         # Was --no-berks passed?
         if config[:run_berks].nil?
-          
+
           # If it wasn't passed but berkshelf isn't installed, set false
           ver = shell_out("berks -v")
           config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
         end
       end
 
+      #
+      # Set defaults for configuration values
+      #
       def setup_config_defaults
-        Chef::Config[:knife][:dockerfiles_path] ||=File.join(Chef::Config[:chef_repo_path], "dockerfiles")
+        Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
       end
 
+      #
+      # Execute berkshelf locally
+      #
       def run_berks
         if berksfile_exists?
           if File.exists?(File.join(chef_repo, "zero.rb"))
@@ -82,29 +95,43 @@ class Chef
         end
       end
 
+      #
+      # Determines whether a Berksfile exists in the Docker context
+      #
+      # @returns [TrueClass, FalseClass]
+      #
       def berksfile_exists?
         File.exists?(File.join(docker_context, "Berksfile"))
       end
 
+      #
+      # Installs all the cookbooks via Berkshelf
+      #
       def run_berks_install
         run_command("berks install")
       end
 
+      #
+      # Vendors all the cookbooks into a directory inside the Docker Context
+      #
       def run_berks_vendor
         if File.exists?(File.join(chef_repo, "cookbooks"))
           if config[:force_build]
             FileUtils.rm_rf(File.join(chef_repo, "cookbooks"))
           else
-            ui.fatal("A `cookbooks` directory already exists. You must either remove this directory from your dockerfile directory or use the `force` flag")
             show_usage
+            ui.fatal("A `cookbooks` directory already exists. You must either remove this directory from your dockerfile directory or use the `force` flag")
             exit 1
           end
         end
-        
+
         run_berks_install
         run_command("berks vendor #{chef_repo}")
       end
 
+      #
+      # Upload the cookbooks to the Chef Server
+      #
       def run_berks_upload
         run_berks_install
         if config[:force_build]
@@ -114,6 +141,9 @@ class Chef
         end
       end
 
+      #
+      # Builds the Docker image
+      #
       def build_image
         run_command(docker_build_command)
       end
@@ -125,14 +155,27 @@ class Chef
         "CHEF_NODE_NAME='#{node_name}' docker build -t #{@name_args[0]} #{docker_context}"
       end
 
+      #
+      # Run a shell command from the Docker Context directory
+      #
       def run_command(cmd)
         shell_out(cmd, cwd: docker_context)
       end
 
+      #
+      # Returns the path to the Docker Context
+      #
+      # @return [String]
+      #
       def docker_context
         File.join(config[:dockerfiles_path], @name_args[0])
       end
 
+      #
+      # Returns the path to the chef-repo inside the Docker Context
+      #
+      # @return [String]
+      #
       def chef_repo
         File.join(docker_context, "chef")
       end
