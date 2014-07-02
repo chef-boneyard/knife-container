@@ -18,6 +18,10 @@
 require 'chef/knife'
 require 'chef/mixin/shell_out'
 
+# These two are needed for cleanup
+require 'chef/node'
+require 'chef/api_client'
+
 class Chef
   class Knife
     class ContainerDockerBuild < Knife
@@ -81,6 +85,9 @@ class Chef
           ver = shell_out("berks -v")
           config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
         end
+
+        # Set cleanup to true unless --no-cleanup was passed
+        config[:cleanup] = config[:cleanup].nil? ? true : false
       end
 
       #
@@ -102,6 +109,15 @@ class Chef
             run_berks_upload
           end
         end
+      end
+
+      #
+      # Determines whether a Berksfile exists in the Docker context
+      #
+      # @returns [TrueClass, FalseClass]
+      #
+      def berksfile_exists?
+        File.exists?(File.join(docker_context, "Berksfile"))
       end
 
       #

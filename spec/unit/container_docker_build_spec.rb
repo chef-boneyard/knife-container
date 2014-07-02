@@ -50,6 +50,10 @@ describe Chef::Knife::ContainerDockerBuild do
 
     context "by default" do
       let(:argv) { %w[ docker/demo ] }
+      before do
+        knife.config[:run_berks] = true
+        knife.config[:cleanup] = true
+      end
 
       it 'should parse argv, run berkshelf, build the image and cleanup the artifacts' do
         expect(knife).to receive(:read_and_validate_params).and_call_original
@@ -63,17 +67,33 @@ describe Chef::Knife::ContainerDockerBuild do
 
     context "--no-berks is passed" do
       let(:argv) { %w[ docker/demo --no-berks ] }
+      before do
+        knife.config[:run_berks] = false
+        knife.config[:cleanup] = true
+      end
 
       it 'should not run berkshelf' do
+        knife.should_receive(:read_and_validate_params)
+        knife.should_receive(:setup_config_defaults)
         expect(knife).not_to receive(:run_berks)
+        knife.should_receive(:build_image)
+        knife.should_receive(:cleanup_artifacts)
         knife.run
       end
     end
 
     context "--no-cleanup is passed" do
       let(:argv) { %w[ docker/demo --no-cleanup ] }
+      before do
+        knife.config[:run_berks] = true
+        knife.config[:cleanup] = false
+      end
 
       it 'should not clean up the artifacts' do
+        knife.should_receive(:read_and_validate_params)
+        knife.should_receive(:setup_config_defaults)
+        knife.should_receive(:run_berks)
+        knife.should_receive(:build_image)
         expect(knife).not_to receive(:cleanup_artifacts)
         knife.run
       end
@@ -95,12 +115,33 @@ describe Chef::Knife::ContainerDockerBuild do
       let(:argv) { %w[ docker/demo ] }
       let(:berks_output) { double("berks -v output", stdout: "berks not found") }
 
-      before do
-        knife.stub(:shell_out).with("berks -v").and_return(berks_output)
-      end
-
-      it 'should set run_berks to false' do
+      it 'should set config[:cleanup] to true' do
         knife.read_and_validate_params
+        knife.config[:cleanup].should eql(true)
+      end
+    end
+
+    context "--no-cleanup was passed" do
+      let(:argv) { %w[ docker/demo --no-cleanup ] }
+
+      it 'should set config[:cleanup] to false' do
+        knife.read_and_validate_params
+        knife.config[:cleanup].should eql(false)
+      end
+    end
+
+    context "--no-berks was not passed" do
+      let(:argv) { %w[ docker/demo ] }
+
+      context "and Berkshelf is not installed" do
+        let(:berks_output) { double("berks -v output", stdout: "berks not found") }
+
+        before do
+          knife.stub(:shell_out).with("berks -v").and_return(berks_output)
+        end
+
+        it 'should set run_berks to false' do
+          knife.read_and_validate_params
         expect(knife.config[:run_berks]).to eql(false)
       end
     end
