@@ -118,8 +118,11 @@ class Chef
         run_command(docker_build_command)
       end
 
+      #
+      # The command to use to build the Docker image
+      #
       def docker_build_command
-        "docker build -t #{@name_args[0]} #{docker_context}"
+        "CHEF_NODE_NAME='#{node_name}' docker build -t #{@name_args[0]} #{docker_context}"
       end
 
       def run_command(cmd)
@@ -132,6 +135,15 @@ class Chef
 
       def chef_repo
         File.join(docker_context, "chef")
+      end
+
+      #
+      # Generates a node name for the Docker container
+      #
+      # @return [String]
+      #
+      def node_name
+        return "#{@name_args[0]}-build"
       end
     end
   end
