@@ -80,6 +80,18 @@ class Chef
       def setup_config_defaults
         Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
+
+        # Determine if we are running local or server mode
+        case
+        when File.exists?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'zero.rb'))
+          config[:local_mode] = true
+        when File.exists?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'client.rb'))
+          config[:local_mode] = false
+        else
+          show_usage
+          ui.fatal("Can not find a Chef configuration file in #{config[:dockerfiles_path]}/#{@name_args[0]}/chef")
+          exit 1
+        end
       end
 
       #
