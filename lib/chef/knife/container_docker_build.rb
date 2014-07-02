@@ -16,30 +16,31 @@
 #
 
 require 'chef/knife'
-require 'knife-container/command'
 require 'chef/mixin/shell_out'
-
-# These two are needed for cleanup
-require 'chef/node'
-require 'chef/api_client'
 
 class Chef
   class Knife
     class ContainerDockerBuild < Knife
-
-      include KnifeContainer::Command
       include Chef::Mixin::ShellOut
+
+      deps do
+        # These two are needed for cleanup
+        require 'chef/node'
+        require 'chef/api_client'
+      end
 
       banner "knife container docker build REPO/NAME [options]"
 
       option :run_berks,
-        :long => "--no-berks",
-        :description => "Skip Berkshelf steps",
+        :long => "--[no-]berks",
+        :description => "Run Berkshelf",
+        :default => true,
         :boolean => true
 
       option :cleanup,
-        :long => "--no-cleanup",
-        :description => "Do not cleanup Chef and Docker artifacts",
+        :long => "--[no-]cleanup",
+        :description => "Cleanup Chef and Docker artifacts",
+        :default => true,
         :boolean => true
 
       option :force_build,
@@ -75,16 +76,11 @@ class Chef
           exit 1
         end
 
-        # Was --no-berks passed?
-        if config[:run_berks].nil?
-
-          # If it wasn't passed but berkshelf isn't installed, set false
+        # if berkshelf isn't installed, set run_berks to false
+        if config[:run_berks]
           ver = shell_out("berks -v")
           config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
         end
-
-        # Set cleanup to true unless --no-cleanup was passed
-        config[:cleanup] = config[:cleanup].nil? ? true : false
       end
 
       #
@@ -99,22 +95,13 @@ class Chef
       # Execute berkshelf locally
       #
       def run_berks
-        if berksfile_exists?
+        if File.exists?(File.join(docker_context, "Berksfile"))
           if File.exists?(File.join(chef_repo, "zero.rb"))
             run_berks_vendor
           elsif File.exists?(File.join(chef_repo, "client.rb"))
             run_berks_upload
           end
         end
-      end
-
-      #
-      # Determines whether a Berksfile exists in the Docker context
-      #
-      # @returns [TrueClass, FalseClass]
-      #
-      def berksfile_exists?
-        File.exists?(File.join(docker_context, "Berksfile"))
       end
 
       #

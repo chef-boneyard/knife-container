@@ -17,6 +17,7 @@
 
 require 'spec_helper'
 require 'chef/knife/container_docker_build'
+Chef::Knife::ContainerDockerBuild.load_deps
 
 describe Chef::Knife::ContainerDockerBuild do
 
@@ -35,58 +36,45 @@ describe Chef::Knife::ContainerDockerBuild do
   subject(:knife) do
     Chef::Knife::ContainerDockerBuild.new(argv).tap do |c|
       c.stub(:output).and_return(true)
+      c.parse_options(argv)
+      c.merge_configs
     end
   end
 
   describe "#run" do
+    before(:each) do
+      knife.stub(:run_berks)
+      knife.stub(:build_image)
+      knife.stub(:cleanup_artifacts)
+    end
 
     context "by default" do
       let(:argv) { %w[ docker/demo ] }
-      before do
-        knife.config[:run_berks] = true
-        knife.config[:cleanup] = true
-      end
 
-      it 'should parse argv, run berks and build image' do
-        knife.should_receive(:read_and_validate_params)
-        knife.should_receive(:setup_config_defaults)
-        knife.should_receive(:run_berks)
-        knife.should_receive(:build_image)
-        knife.should_receive(:cleanup_artifacts)
+      it 'should parse argv, run berkshelf, build the image and cleanup the artifacts' do
+        expect(knife).to receive(:read_and_validate_params).and_call_original
+        expect(knife).to receive(:setup_config_defaults).and_call_original
+        expect(knife).to receive(:run_berks)
+        expect(knife).to receive(:build_image)
+        expect(knife).to receive(:cleanup_artifacts)
         knife.run
       end
     end
 
     context "--no-berks is passed" do
       let(:argv) { %w[ docker/demo --no-berks ] }
-      before do
-        knife.config[:run_berks] = false
-        knife.config[:cleanup] = true
-      end
 
-      it 'should parse argv and build image without running berks' do
-        knife.should_receive(:read_and_validate_params)
-        knife.should_receive(:setup_config_defaults)
-        knife.should_not_receive(:run_berks)
-        knife.should_receive(:build_image)
-        knife.should_receive(:cleanup_artifacts)
+      it 'should not run berkshelf' do
+        expect(knife).not_to receive(:run_berks)
         knife.run
       end
     end
 
     context "--no-cleanup is passed" do
       let(:argv) { %w[ docker/demo --no-cleanup ] }
-      before do
-        knife.config[:run_berks] = true
-        knife.config[:cleanup] = false
-      end
 
-      it 'should parse argv, run berks, build the image without cleaning up the artifacts' do
-        knife.should_receive(:read_and_validate_params)
-        knife.should_receive(:setup_config_defaults)
-        knife.should_receive(:run_berks)
-        knife.should_receive(:build_image)
-        knife.should_not_receive(:cleanup_artifacts)
+      it 'should not clean up the artifacts' do
+        expect(knife).not_to receive(:cleanup_artifacts)
         knife.run
       end
     end
@@ -97,53 +85,23 @@ describe Chef::Knife::ContainerDockerBuild do
 
     context 'argv is empty' do
       it 'should should print usage and exit' do
-        knife.should_receive(:show_usage)
-        knife.ui.should_receive(:fatal)
-        lambda { knife.read_and_validate_params }.should raise_error(SystemExit)
+        expect(knife).to receive(:show_usage)
+        expect(knife.ui).to receive(:fatal)
+        expect { knife.run }.to raise_error(SystemExit)
       end
     end
 
-    context "--no-cleanup was not passed" do
+    context "when Berkshelf is not installed" do
       let(:argv) { %w[ docker/demo ] }
+      let(:berks_output) { double("berks -v output", stdout: "berks not found") }
 
-      it 'should set config[:cleanup] to true' do
+      before do
+        knife.stub(:shell_out).with("berks -v").and_return(berks_output)
+      end
+
+      it 'should set run_berks to false' do
         knife.read_and_validate_params
-        knife.config[:cleanup].should eql(true)
-      end
-    end
-
-    context "--no-cleanup was passed" do
-      let(:argv) { %w[ docker/demo --no-cleanup ] }
-
-      it 'should set config[:cleanup] to false' do
-        knife.read_and_validate_params
-        knife.config[:cleanup].should eql(false)
-      end
-    end
-
-    context "--no-berks was not passed" do
-      let(:argv) { %w[ docker/demo ] }
-
-      context "and Berkshelf is not installed" do
-        let(:berks_output) { double("berks -v output", stdout: "berks not found") }
-
-        before do
-          knife.stub(:shell_out).with("berks -v").and_return(berks_output)
-        end
-
-        it 'should set run_berks to false' do
-          knife.read_and_validate_params
-          knife.config[:run_berks].should eql(false)
-        end
-      end
-
-      context "and Berkshelf is installed" do
-        let(:berks_output) { double("berks -v output", stdout: "3.1.1") }
-
-        it 'should set run_berks to true' do
-          knife.read_and_validate_params
-          knife.config[:run_berks].should eql(true)
-        end
+        expect(knife.config[:run_berks]).to eql(false)
       end
     end
   end
@@ -160,14 +118,13 @@ describe Chef::Knife::ContainerDockerBuild do
       it 'sets dockerfiles_path to Chef::Config[:chef_repo_path]/dockerfiles' do
         $stdout.stub(:write)
         knife.setup_config_defaults
-        knife.config[:dockerfiles_path].should eql("#{Chef::Config[:chef_repo_path]}/dockerfiles")
+        expect(knife.config[:dockerfiles_path]).to eql("#{Chef::Config[:chef_repo_path]}/dockerfiles")
       end
     end
   end
 
   describe "#run_berks" do
-
-    let(:argv) { %W[ docker/local ] }
+    let(:argv) { %W[ docker/demo ] }
 
     before(:each) do
      Chef::Config.reset
@@ -175,42 +132,42 @@ describe Chef::Knife::ContainerDockerBuild do
      Chef::Config[:knife][:dockerfiles_path] = default_dockerfiles_path
     end
 
-    let(:docker_context) { File.join(Chef::Config[:knife][:dockerfiles_path], 'docker', 'local') }
+    let(:docker_context) { File.join(Chef::Config[:knife][:dockerfiles_path], 'docker', 'demo') }
 
     context "when there is no Berksfile" do
-      before { knife.stub(:berksfile_exists?).and_return(false) }
+      before { File.stub(:exists?).with(File.join(docker_context, 'Berksfile')).and_return(false) }
 
       it "returns doing nothing" do
-        knife.should_not_receive(:run_berks_vendor)
-        knife.should_not_receive(:run_berks_upload)
+        expect(knife).not_to receive(:run_berks_vendor)
+        expect(knife).not_to receive(:run_berks_upload)
         knife.run_berks
       end
     end
 
     context "when docker image was init in local mode" do
       before do
+        File.stub(:exists?).with(File.join(docker_context, 'Berksfile')).and_return(true)
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'zero.rb')).and_return(true)
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'client.rb')).and_return(false)
         knife.stub(:chef_repo).and_return(File.join(docker_context, "chef"))
-        knife.stub(:berksfile_exists?).and_return(true)
       end
 
       it 'should call run_berks_vendor' do
-        knife.should_receive(:run_berks_vendor)
+        expect(knife).to receive(:run_berks_vendor)
         knife.run_berks
       end
     end
 
     context "when docker image was init in client mode" do
       before do
+        File.stub(:exists?).with(File.join(docker_context, 'Berksfile')).and_return(true)
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'zero.rb')).and_return(false)
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'client.rb')).and_return(true)
         knife.stub(:chef_repo).and_return(File.join(docker_context, "chef"))
-        knife.stub(:berksfile_exists?).and_return(true)
       end
 
       it 'should call run_berks_upload' do
-        knife.should_receive(:run_berks_upload)
+        expect(knife).to receive(:run_berks_upload)
         knife.run_berks
       end
     end
@@ -218,7 +175,7 @@ describe Chef::Knife::ContainerDockerBuild do
 
   describe "#run_berks_install" do
     it "should call `berks install`" do
-      knife.should_receive(:run_command).with("berks install")
+      expect(knife).to receive(:run_command).with("berks install")
       knife.run_berks_install
     end
   end
@@ -245,8 +202,8 @@ describe Chef::Knife::ContainerDockerBuild do
 
         it "should delete the existing cookbooks directory and run berks.vendor" do
           FileUtils.should_receive(:rm_rf).with(File.join(docker_context, 'chef', 'cookbooks'))
-          knife.should_receive(:run_berks_install)
-          knife.should_receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+          expect(knife).to receive(:run_berks_install)
+          expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
           knife.run_berks_vendor
         end
 
@@ -258,7 +215,7 @@ describe Chef::Knife::ContainerDockerBuild do
         it "should error out" do
           $stdout.stub(:write)
           $stderr.stub(:write)
-          lambda { knife.run_berks_vendor }.should raise_error(SystemExit)
+          expect { knife.run_berks_vendor }.to raise_error(SystemExit)
         end
       end
     end
@@ -269,8 +226,8 @@ describe Chef::Knife::ContainerDockerBuild do
       end
 
       it "should call berks.vendor" do
-        knife.should_receive(:run_berks_install)
-        knife.should_receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+        expect(knife).to receive(:run_berks_install)
+        expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
         knife.run_berks_vendor
       end
     end
@@ -293,12 +250,12 @@ describe Chef::Knife::ContainerDockerBuild do
       end
 
       it "should call berks install" do
-        knife.should_receive(:run_berks_install)
+        expect(knife).to receive(:run_berks_install)
         knife.run_berks_upload
       end
 
       it "should run berks upload" do
-        knife.should_receive(:run_command).with("berks upload")
+        expect(knife).to receive(:run_command).with("berks upload")
         knife.run_berks_upload
       end
     end
@@ -309,7 +266,7 @@ describe Chef::Knife::ContainerDockerBuild do
       end
 
       it "should run berks upload with force" do
-        knife.should_receive(:run_command).with("berks upload --force")
+        expect(knife).to receive(:run_command).with("berks upload --force")
         knife.run_berks_upload
       end
     end
