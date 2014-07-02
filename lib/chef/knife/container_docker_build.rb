@@ -60,8 +60,8 @@ class Chef
       #
       def read_and_validate_params
         if @name_args.length < 1
-          ui.fatal("You must specify a Dockerfile name")
           show_usage
+          ui.fatal("You must specify a Dockerfile name")
           exit 1
         end
 
