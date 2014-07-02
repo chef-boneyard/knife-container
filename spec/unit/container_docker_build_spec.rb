@@ -42,24 +42,51 @@ describe Chef::Knife::ContainerDockerBuild do
 
     context "by default" do
       let(:argv) { %w[ docker/demo ] }
+      before do
+        knife.config[:run_berks] = true
+        knife.config[:cleanup] = true
+      end
 
       it 'should parse argv, run berks and build image' do
-        knife.should_receive(:read_and_validate_params).and_call_original
-        knife.should_receive(:setup_config_defaults).and_call_original
+        knife.should_receive(:read_and_validate_params)
+        knife.should_receive(:setup_config_defaults)
         knife.should_receive(:run_berks)
         knife.should_receive(:build_image)
+        knife.should_receive(:cleanup_artifacts)
         knife.run
       end
     end
 
     context "--no-berks is passed" do
       let(:argv) { %w[ docker/demo --no-berks ] }
+      before do
+        knife.config[:run_berks] = false
+        knife.config[:cleanup] = true
+      end
 
-      it 'should parse argv, run berks and build image' do
-        knife.should_receive(:read_and_validate_params).and_call_original
-        knife.should_receive(:setup_config_defaults).and_call_original
+      it 'should parse argv and build image without running berks' do
+        knife.should_receive(:read_and_validate_params)
+        knife.should_receive(:setup_config_defaults)
         knife.should_not_receive(:run_berks)
         knife.should_receive(:build_image)
+        knife.should_receive(:cleanup_artifacts)
+        knife.run
+      end
+    end
+
+    context "--no-cleanup is passed" do
+      let(:argv) { %w[ docker/demo --no-cleanup ] }
+      before do
+        knife.config[:run_berks] = true
+        knife.config[:cleanup] = false
+      end
+
+      it 'should parse argv, run berks, build the image without cleaning up the artifacts' do
+        knife.should_receive(:read_and_validate_params)
+        knife.should_receive(:setup_config_defaults)
+        knife.should_receive(:run_berks)
+        knife.should_receive(:build_image)
+        knife.should_not_receive(:cleanup_artifacts)
         knife.run
       end
     end
@@ -76,12 +103,30 @@ describe Chef::Knife::ContainerDockerBuild do
       end
     end
 
+    context "--no-cleanup was not passed" do
+      let(:argv) { %w[ docker/demo ] }
+
+      it 'should set config[:cleanup] to true' do
+        knife.read_and_validate_params
+        knife.config[:cleanup].should eql(true)
+      end
+    end
+
+    context "--no-cleanup was passed" do
+      let(:argv) { %w[ docker/demo --no-cleanup ] }
+
+      it 'should set config[:cleanup] to false' do
+        knife.read_and_validate_params
+        knife.config[:cleanup].should eql(false)
+      end
+    end
+
     context "--no-berks was not passed" do
       let(:argv) { %w[ docker/demo ] }
 
       context "and Berkshelf is not installed" do
         let(:berks_output) { double("berks -v output", stdout: "berks not found") }
-        
+
         before do
           knife.stub(:shell_out).with("berks -v").and_return(berks_output)
         end
@@ -194,7 +239,7 @@ describe Chef::Knife::ContainerDockerBuild do
       before do
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'cookbooks')).and_return(true)
       end
-      
+
       context "and force-build was specified" do
         let(:argv) { %w[ docker/demo --force ]}
 
@@ -209,7 +254,7 @@ describe Chef::Knife::ContainerDockerBuild do
 
       context "and force-build was not specified" do
         let(:argv) { %w[ docker-demo ] }
-        
+
         it "should error out" do
           $stdout.stub(:write)
           $stderr.stub(:write)
@@ -279,6 +324,18 @@ describe Chef::Knife::ContainerDockerBuild do
 
     it "should return valid command" do
       expect(knife.docker_build_command).to eql("CHEF_NODE_NAME='docker/demo-build' docker build -t docker/demo #{default_dockerfiles_path}/docker/demo")
+    end
+  end
+
+  describe "#cleanup_artifacts" do
+    let(:argv) { %w[ docker/demo ] }
+
+    context "running in server-mode" do
+      it "should delete the node and client objects from the Chef Server" do
+        expect(knife).to receive(:destroy_item).with(Chef::Node, 'docker/demo-build', 'node')
+        expect(knife).to receive(:destroy_item).with(Chef::ApiClient, 'docker/demo-build', 'client')
+        knife.cleanup_artifacts
+      end
     end
   end
 end
