@@ -107,6 +107,7 @@ describe Chef::Knife::ContainerDockerBuild do
     before do
       Chef::Config.reset
       Chef::Config[:chef_repo_path] = tempdir
+      File.stub(:exists?).with(File.join(tempdir, 'dockerfiles', 'docker', 'demo', 'chef', 'zero.rb')).and_return(true)
     end
 
     let(:argv) { %w[ docker/demo ]}
