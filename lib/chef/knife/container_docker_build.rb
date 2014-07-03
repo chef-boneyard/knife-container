@@ -16,21 +16,31 @@
 #
 
 require 'chef/knife'
-require 'knife-container/command'
 require 'chef/mixin/shell_out'
 
 class Chef
   class Knife
     class ContainerDockerBuild < Knife
-
-      include KnifeContainer::Command
       include Chef::Mixin::ShellOut
+
+      deps do
+        # These two are needed for cleanup
+        require 'chef/node'
+        require 'chef/api_client'
+      end
 
       banner "knife container docker build REPO/NAME [options]"
 
       option :run_berks,
-        :long => "--no-berks",
-        :description => "Skip Berkshelf steps",
+        :long => "--[no-]berks",
+        :description => "Run Berkshelf",
+        :default => true,
+        :boolean => true
+
+      option :cleanup,
+        :long => "--[no-]cleanup",
+        :description => "Cleanup Chef and Docker artifacts",
+        :default => true,
         :boolean => true
 
       option :force_build,
@@ -52,6 +62,7 @@ class Chef
         setup_config_defaults
         run_berks if config[:run_berks]
         build_image
+        cleanup_artifacts if config[:cleanup]
       end
 
       #
@@ -65,10 +76,8 @@ class Chef
           exit 1
         end
 
-        # Was --no-berks passed?
-        if config[:run_berks].nil?
-
-          # If it wasn't passed but berkshelf isn't installed, set false
+        # if berkshelf isn't installed, set run_berks to false
+        if config[:run_berks]
           ver = shell_out("berks -v")
           config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
         end
@@ -98,7 +107,7 @@ class Chef
       # Execute berkshelf locally
       #
       def run_berks
-        if berksfile_exists?
+        if File.exists?(File.join(docker_context, "Berksfile"))
           if File.exists?(File.join(chef_repo, "zero.rb"))
             run_berks_vendor
           elsif File.exists?(File.join(chef_repo, "client.rb"))
@@ -161,6 +170,16 @@ class Chef
       end
 
       #
+      # Cleanup build artifacts
+      #
+      def cleanup_artifacts
+        unless config[:local_mode]
+          destroy_item(Chef::Node, node_name, "node")
+          destroy_item(Chef::ApiClient, node_name, "client")
+        end
+      end
+
+      #
       # The command to use to build the Docker image
       #
       def docker_build_command
@@ -199,6 +218,20 @@ class Chef
       #
       def node_name
         return "#{@name_args[0]}-build"
+      end
+
+      # Extracted from Chef::Knife.delete_object, because it has a
+      # confirmation step built in... By not specifying the '--no-cleanup'
+      # flag the user is already making their intent known.  It is not
+      # necessary to make them confirm two more times.
+      def destroy_item(klass, name, type_name)
+        begin
+          object = klass.load(name)
+          object.destroy
+          ui.warn("Deleted #{type_name} #{name}")
+        rescue Net::HTTPServerException
+          ui.warn("Could not find a #{type_name} named #{name} to delete!")
+        end
       end
     end
   end
