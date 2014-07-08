@@ -318,6 +318,7 @@ describe Chef::Knife::ContainerDockerInit do
     let(:expected_container_file_relpaths) do
       %w[
         Dockerfile
+        .dockerignore
         Berksfile
         chef/first-boot.json
         chef/zero.rb
@@ -389,6 +390,7 @@ describe Chef::Knife::ContainerDockerInit do
     let(:expected_container_file_relpaths) do
       %w[
         Dockerfile
+        .dockerignore
         chef/first-boot.json
         chef/client.rb
         chef/validation.pem
