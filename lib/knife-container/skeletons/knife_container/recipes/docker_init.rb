@@ -80,8 +80,8 @@ if context.chef_client_mode == "zero"
       if File.exists?(File.expand_path(dir))
         directory "#{temp_chef_repo}/cookbooks"
         cookbooks.each do |cookbook|
-          execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
-            only_if { File.exists?("#{File.expand_path(dir)}/#{cookbook}") }
+          if File.exists?("#{File.expand_path(dir)}/#{cookbook}")
+            execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
           end
         end
       else
@@ -91,8 +91,8 @@ if context.chef_client_mode == "zero"
   elsif File.exists?(File.expand_path(context.cookbook_path))
     directory "#{temp_chef_repo}/cookbooks"
     cookbooks.each do |cookbook|
-      execute "cp -rf #{File.expand_path(context.cookbook_path)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
-        only_if { File.exists?("#{File.expand_path(context.cookbook_path)}/#{cookbook}") }
+      if File.exists?("#{File.expand_path(context.cookbook_path)}/#{cookbook}")
+        execute "cp -rf #{File.expand_path(context.cookbook_path)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
       end
     end
   else
