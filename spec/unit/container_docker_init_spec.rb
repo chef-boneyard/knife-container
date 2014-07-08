@@ -114,6 +114,20 @@ describe Chef::Knife::ContainerDockerInit do
         @knife.setup_context
         expect(generator_context.cookbook_path).to eq(Chef::Config[:cookbook_path])
       end
+
+      context 'when cookbook_path is an array' do
+        before do
+          Chef::Config[:cookbook_path] = ['/path/to/cookbooks/', '/path/to/site-cookbooks']
+        end
+
+        it 'honors the array' do
+          @knife.read_and_validate_params
+          @knife.set_config_defaults
+          @knife.setup_context
+          expect(generator_context.cookbook_path).to eq(Chef::Config[:cookbook_path])
+        end
+      end
+
       it 'sets node_path to Chef::Config value' do
         @knife.read_and_validate_params
         @knife.set_config_defaults
@@ -263,6 +277,30 @@ describe Chef::Knife::ContainerDockerInit do
     end
   end
 
+  describe "when copying cookbooks to temporary chef-repo" do
+
+    context "when config specifies multiple directories" do
+      before(:each) do
+        Chef::Config.reset
+        Chef::Config[:chef_repo_path] = tempdir
+        Chef::Config[:cookbook_path] = ["#{fixtures_path}/cookbooks", "#{fixtures_path}/site-cookbooks"]
+      end
+
+      let(:argv) { %W[
+        docker/demo
+        -r recipe[nginx],recipe[apt]
+        -z
+      ]}
+
+      it "should copy cookbooks from both directories" do
+        @knife.chef_runner.stub(:stdout).and_return(stdout_io)
+        @knife.run
+        expect(stdout).to include("execute[cp -rf #{fixtures_path}/cookbooks/nginx #{tempdir}/dockerfiles/docker/demo/chef/cookbooks/] action run")
+        expect(stdout).to include("execute[cp -rf #{fixtures_path}/site-cookbooks/apt #{tempdir}/dockerfiles/docker/demo/chef/cookbooks/] action run")
+      end
+    end
+  end
+
   describe "when executed in local mode" do
     before(:each) do
      Chef::Config.reset
@@ -283,7 +321,6 @@ describe Chef::Knife::ContainerDockerInit do
         Berksfile
         chef/first-boot.json
         chef/zero.rb
-        chef/cookbooks/nginx
         chef/ohai/hints
         chef/ohai_plugins/docker_container.rb
       ]

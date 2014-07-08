@@ -72,16 +72,20 @@ end
 # Copy over the necessary directories into the temp chef-repo (if local-mode)
 if context.chef_client_mode == "zero"
 
+  # generate a cookbooks directory unless we are building from a Berksfile
+  unless context.generate_berksfile
+    directory "#{temp_chef_repo}/cookbooks"
+  end
+
   # Copy over cookbooks that are mentioned in the runlist. There is a gap here
   # that dependent cookbooks are not copied. This is a result of not having a
   # depsolver in the chef-client. The solution here is to use the Berkshelf integration.
   if context.cookbook_path.kind_of?(Array)
     context.cookbook_path.each do |dir|
       if File.exists?(File.expand_path(dir))
-        directory "#{temp_chef_repo}/cookbooks"
         cookbooks.each do |cookbook|
-          execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
-            only_if { File.exists?("#{File.expand_path(dir)}/#{cookbook}") }
+          if File.exists?("#{File.expand_path(dir)}/#{cookbook}")
+            execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
           end
         end
       else
@@ -89,10 +93,9 @@ if context.chef_client_mode == "zero"
       end
     end
   elsif File.exists?(File.expand_path(context.cookbook_path))
-    directory "#{temp_chef_repo}/cookbooks"
     cookbooks.each do |cookbook|
-      execute "cp -rf #{File.expand_path(context.cookbook_path)}/#{cookbook} #{temp_chef_repo}/cookbooks/" do
-        only_if { File.exists?("#{File.expand_path(context.cookbook_path)}/#{cookbook}") }
+      if File.exists?("#{File.expand_path(context.cookbook_path)}/#{cookbook}")
+        execute "cp -rf #{File.expand_path(context.cookbook_path)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
       end
     end
   else
