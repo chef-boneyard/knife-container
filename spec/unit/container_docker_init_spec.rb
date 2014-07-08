@@ -321,7 +321,6 @@ describe Chef::Knife::ContainerDockerInit do
         Berksfile
         chef/first-boot.json
         chef/zero.rb
-        chef/cookbooks/nginx
         chef/ohai/hints
         chef/ohai_plugins/docker_container.rb
       ]
