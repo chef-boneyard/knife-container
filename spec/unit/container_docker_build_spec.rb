@@ -46,6 +46,9 @@ describe Chef::Knife::ContainerDockerBuild do
       knife.stub(:run_berks)
       knife.stub(:build_image)
       knife.stub(:cleanup_artifacts)
+      Chef::Config.reset
+      Chef::Config[:chef_repo_path] = tempdir
+      File.stub(:exists?).with(File.join(tempdir, 'dockerfiles', 'docker', 'demo', 'chef', 'zero.rb')).and_return(true)
     end
 
     context "by default" do
@@ -243,7 +246,7 @@ describe Chef::Knife::ContainerDockerBuild do
       end
     end
 
-    context "cookobooks directory does not yet exist" do
+    context "cookbooks directory does not yet exist" do
       before do
         File.stub(:exists?).with(File.join(docker_context, 'chef', 'cookbooks')).and_return(false)
       end
