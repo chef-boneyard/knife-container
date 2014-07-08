@@ -256,6 +256,17 @@ describe Chef::Knife::ContainerDockerInit do
     end
   end
 
+  describe 'creating the Dockerfile' do
+    let(:argv) { %W[
+      docker/demo
+      -f chef/ubuntu-12.04:latest
+    ]}
+
+    it 'should set the base_image name in a comment in the Dockerfile' do
+      expect(File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Dockerfile")).to include '# BASE chef/ubuntu-12.04:latest'
+    end
+  end
+
   describe "when executed without a valid cookbook path" do
     before(:each) do
      Chef::Config.reset
