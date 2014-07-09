@@ -18,6 +18,12 @@ template File.join(dockerfile_dir, "Dockerfile") do
   helpers(KnifeContainer::Generator::TemplateHelper)
 end
 
+# .dockerfile
+template File.join(dockerfile_dir, ".dockerignore") do
+  source "dockerignore.erb"
+  helpers(KnifeContainer::Generator::TemplateHelper)
+end
+
 
 ##
 # Initial Chef Setup
