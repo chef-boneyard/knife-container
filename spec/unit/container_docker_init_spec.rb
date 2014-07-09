@@ -333,8 +333,6 @@ describe Chef::Knife::ContainerDockerInit do
         Berksfile
         chef/first-boot.json
         chef/zero.rb
-        chef/ohai/hints
-        chef/ohai_plugins/docker_container.rb
       ]
     end
 
@@ -405,8 +403,6 @@ describe Chef::Knife::ContainerDockerInit do
         chef/first-boot.json
         chef/client.rb
         chef/validation.pem
-        chef/ohai/hints
-        chef/ohai_plugins/docker_container.rb
         chef/trusted_certs/chef_example_com.crt
         chef/encrypted_data_bag_secret
       ]
