@@ -445,11 +445,15 @@ describe Chef::Knife::ContainerDockerInit do
   end
 
   describe "#download_and_tag_base_image" do
-    before { @knife.unstub(:download_and_tag_base_image) }
+    before do
+      @knife.unstub(:download_and_tag_base_image)
+      @knife.stub(:shell_out).with("docker images -q chef/ubuntu-12.04:latest").and_return(double("output", stdout: "123456789"))
+    end
     let(:argv) { %w[ docker/demo ] }
     it "should run docker pull on the specified base image and tag it with the dockerfile name" do
+      @knife.ui.should_receive(:info).twice
       @knife.should_receive(:shell_out).with("docker pull chef/ubuntu-12.04:latest")
-      @knife.should_receive(:shell_out).with("docker tag chef/ubuntu-12.04:latest docker/demo")
+      @knife.should_receive(:shell_out).with("docker tag 123456789 docker/demo")
       @knife.read_and_validate_params
       @knife.set_config_defaults
       @knife.download_and_tag_base_image
