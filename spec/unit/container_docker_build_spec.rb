@@ -229,7 +229,7 @@ describe Chef::Knife::ContainerDockerBuild do
         it "should delete the existing cookbooks directory and run berks.vendor" do
           expect(FileUtils).to receive(:rm_rf).with(File.join(docker_context, 'chef', 'cookbooks'))
           expect(knife).to receive(:run_berks_install)
-          expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+          expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef', 'cookbooks')}")
           knife.run_berks_vendor
         end
 
@@ -253,7 +253,7 @@ describe Chef::Knife::ContainerDockerBuild do
 
       it "should call berks.vendor" do
         expect(knife).to receive(:run_berks_install)
-        expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+        expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef', 'cookbooks')}")
         knife.run_berks_vendor
       end
     end
@@ -276,6 +276,7 @@ describe Chef::Knife::ContainerDockerBuild do
       end
 
       it "should call berks install" do
+        knife.stub(:run_command).with("berks upload")
         expect(knife).to receive(:run_berks_install)
         knife.run_berks_upload
       end
