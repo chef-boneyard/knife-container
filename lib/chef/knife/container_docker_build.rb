@@ -190,7 +190,12 @@ class Chef
       # Run a shell command from the Docker Context directory
       #
       def run_command(cmd)
-        shell_out(cmd, cwd: docker_context)
+        Open3.popen2e(cmd, chdir: docker_context) do |stdin, stdout_err, wait_thr|
+          while line = stdout_err.gets
+            puts line
+          end
+          wait_thr.value.to_i
+        end
       end
 
       #
