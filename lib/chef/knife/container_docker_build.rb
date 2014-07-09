@@ -147,7 +147,7 @@ class Chef
         end
 
         run_berks_install
-        run_command("berks vendor #{chef_repo}")
+        run_command("berks vendor #{chef_repo}/cookbooks")
       end
 
       #
