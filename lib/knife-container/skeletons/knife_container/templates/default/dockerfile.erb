@@ -1,3 +1,4 @@
+# BASE <%= base_image %>
 FROM <%= dockerfile_name %>
 ADD chef/ /etc/chef/
 RUN chef-init --bootstrap
