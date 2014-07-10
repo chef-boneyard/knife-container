@@ -144,12 +144,14 @@ if context.chef_client_mode == "client"
   end
 
   # Copy over encrypted_data_bag_key
-  file File.join(temp_chef_repo, "encrypted_data_bag_secret") do
-   content File.read(context.encrypted_data_bag_secret)
-   mode '0600'
-   only_if { File.exists?(File.join(context.encrypted_data_bag_secret)) }
+  unless context.encrypted_data_bag_secret.nil?
+    if File.exists?(context.encrypted_data_bag_secret)
+      file File.join(temp_chef_repo, "encrypted_data_bag_secret") do
+       content File.read(context.encrypted_data_bag_secret)
+       mode '0600'
+      end
+    end
   end
-
 end
 
 ##

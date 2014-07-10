@@ -150,7 +150,6 @@ class Chef
           validation_client_name
           chef_server_url
           trusted_certs_dir
-          encrypted_data_bag_secret
           cookbook_path
           node_path
           role_path
