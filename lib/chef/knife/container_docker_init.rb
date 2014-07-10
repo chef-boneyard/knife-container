@@ -115,6 +115,7 @@ class Chef
         setup_context
         chef_runner.converge
         download_and_tag_base_image
+        puts "\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{@name_args[0]}", :magenta)}"
       end
 
       #
