@@ -183,7 +183,7 @@ class Chef
       # The command to use to build the Docker image
       #
       def docker_build_command
-        "CHEF_NODE_NAME='#{node_name}' docker build -t #{@name_args[0]} #{docker_context}"
+        "docker build -t #{@name_args[0]} #{docker_context}"
       end
 
       #
@@ -222,7 +222,7 @@ class Chef
       # @return [String]
       #
       def node_name
-        return "#{@name_args[0]}-build"
+        "#{@name_args[0].gsub('/','-')}-build"
       end
 
       # Extracted from Chef::Knife.delete_object, because it has a

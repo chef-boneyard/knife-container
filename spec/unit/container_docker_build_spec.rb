@@ -307,7 +307,7 @@ describe Chef::Knife::ContainerDockerBuild do
     end
 
     it "should return valid command" do
-      expect(knife.docker_build_command).to eql("CHEF_NODE_NAME='docker/demo-build' docker build -t docker/demo #{default_dockerfiles_path}/docker/demo")
+      expect(knife.docker_build_command).to eql("docker build -t docker/demo #{default_dockerfiles_path}/docker/demo")
     end
   end
 
@@ -316,8 +316,8 @@ describe Chef::Knife::ContainerDockerBuild do
 
     context "running in server-mode" do
       it "should delete the node and client objects from the Chef Server" do
-        expect(knife).to receive(:destroy_item).with(Chef::Node, 'docker/demo-build', 'node')
-        expect(knife).to receive(:destroy_item).with(Chef::ApiClient, 'docker/demo-build', 'client')
+        expect(knife).to receive(:destroy_item).with(Chef::Node, 'docker-demo-build', 'node')
+        expect(knife).to receive(:destroy_item).with(Chef::ApiClient, 'docker-demo-build', 'client')
         knife.cleanup_artifacts
       end
     end

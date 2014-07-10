@@ -45,6 +45,11 @@ file File.join(temp_chef_repo, "first-boot.json") do
   content context.first_boot
 end
 
+# Node Name
+template File.join(temp_chef_repo, ".node_name") do
+  source "node_name.erb"
+  helpers(KnifeContainer::Generator::TemplateHelper)
+end
 
 ##
 # Resolve run list

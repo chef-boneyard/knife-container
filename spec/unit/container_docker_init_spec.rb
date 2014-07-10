@@ -333,6 +333,7 @@ describe Chef::Knife::ContainerDockerInit do
         Berksfile
         chef/first-boot.json
         chef/zero.rb
+        chef/.node_name
       ]
     end
 
@@ -405,6 +406,7 @@ describe Chef::Knife::ContainerDockerInit do
         chef/validation.pem
         chef/trusted_certs/chef_example_com.crt
         chef/encrypted_data_bag_secret
+        chef/.node_name
       ]
     end
 
