@@ -160,6 +160,11 @@ class Chef
 
         config[:base_image] ||= "chef/ubuntu-12.04:latest"
 
+        # if no tag is specified, use latest
+        unless config[:base_image] =~ /[a-zA-Z0-9\/]+:[a-zA-Z0-9.\-]+/
+          config[:base_image] = "#{config[:base_image]}:latest"
+        end
+
         config[:run_list] ||= []
 
         Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
@@ -223,10 +228,9 @@ class Chef
       def download_and_tag_base_image
         ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
         shell_out("docker pull #{config[:base_image]}")
-        image_id_output = shell_out("docker images -q #{config[:base_image]}")
-        image_id = image_id_output.stdout.strip
-        ui.info("Tagging base image #{config[:base_image]} as #{@name_args[0]}")
-        shell_out("docker tag #{image_id} #{@name_args[0]}")
+        image_name = config[:base_image].split(':')[0]
+        ui.info("Tagging base image #{image_name} as #{@name_args[0]}")
+        shell_out("docker tag #{image_name} #{@name_args[0]}")
       end
 
       #

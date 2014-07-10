@@ -85,11 +85,11 @@ describe Chef::Knife::ContainerDockerInit do
      Chef::Config[:chef_repo_path] = tempdir
     end
 
-    let(:argv) { %W[
-      docker/demo
-    ]}
-
     context 'when no cli overrides have been specified' do
+      let(:argv) { %W[
+        docker/demo
+      ]}
+
       it 'sets validation_key to Chef::Config value' do
         @knife.read_and_validate_params
         @knife.set_config_defaults
@@ -160,6 +160,33 @@ describe Chef::Knife::ContainerDockerInit do
           @knife.set_config_defaults
           @knife.setup_context
           expect(generator_context.dockerfiles_path).to eq("#{Chef::Config[:chef_repo_path]}/dockerfiles")
+        end
+      end
+    end
+
+    context "when base image is specified" do
+
+      context "with a tag" do
+        let(:argv) { %W[
+          docker/demo -f docker/demo:11.12.8
+        ]}
+
+        it "should respect that tag" do
+          @knife.read_and_validate_params
+          @knife.set_config_defaults
+          expect(@knife.config[:base_image]).to eql("docker/demo:11.12.8")
+        end
+      end
+
+      context "without a tag" do
+        let(:argv) { %W[
+          docker/demo -f docker/demo
+        ]}
+
+        it "should append the 'latest' tag on the name" do
+          @knife.read_and_validate_params
+          @knife.set_config_defaults
+          expect(@knife.config[:base_image]).to eql("docker/demo:latest")
         end
       end
     end
@@ -447,15 +474,16 @@ describe Chef::Knife::ContainerDockerInit do
   end
 
   describe "#download_and_tag_base_image" do
+
     before do
       @knife.unstub(:download_and_tag_base_image)
-      @knife.stub(:shell_out).with("docker images -q chef/ubuntu-12.04:latest").and_return(double("output", stdout: "123456789"))
     end
+
     let(:argv) { %w[ docker/demo ] }
     it "should run docker pull on the specified base image and tag it with the dockerfile name" do
       @knife.ui.should_receive(:info).twice
       @knife.should_receive(:shell_out).with("docker pull chef/ubuntu-12.04:latest")
-      @knife.should_receive(:shell_out).with("docker tag 123456789 docker/demo")
+      @knife.should_receive(:shell_out).with("docker tag chef/ubuntu-12.04 docker/demo")
       @knife.read_and_validate_params
       @knife.set_config_defaults
       @knife.download_and_tag_base_image
