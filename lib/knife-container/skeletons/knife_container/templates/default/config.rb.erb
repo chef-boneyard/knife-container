@@ -1,15 +1,16 @@
 require 'chef-init'
 
-node_name               ChefInit.node_name
+node_name                   ChefInit.node_name
 <% if chef_client_mode == "zero" -%>
-cookbook_path           ["/etc/chef/cookbooks"]
+cookbook_path               ["/etc/chef/cookbooks"]
 <% elsif chef_client_mode == "client" -%>
-chef_server_url         '<%= chef_server_url %>'
-validation_client_name  '<%= validation_client_name %>'
-validation_key          '/etc/chef/secure/validation.pem'
-client_key              '/etc/chef/secure/client.pem'
+chef_server_url             '<%= chef_server_url %>'
+validation_client_name      '<%= validation_client_name %>'
+validation_key              '/etc/chef/secure/validation.pem'
+client_key                  '/etc/chef/secure/client.pem'
+trusted_certs_dir           '/etc/chef/secure/trusted_certs'
+<% end -%>
 <% unless encrypted_data_bag_secret.nil? -%>
-encrypted_data_bag_secret '/etc/chef/secure/encrypted_data_bag_secret'
+encrypted_data_bag_secret   '/etc/chef/secure/encrypted_data_bag_secret'
 <% end -%>
-<% end -%>
-ssl_verify_mode         :verify_peer
+ssl_verify_mode             :verify_peer

@@ -54,6 +54,12 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :include_credentials,
+        :long => "--include-credentials",
+        :description => "Include secure credentials in your Docker image",
+        :boolean => true,
+        :default => false
+
       option :validation_key,
         :long => "--validation-key PATH",
         :description => "The path to the validation key used by the client, typically a file named validation.pem"
@@ -193,6 +199,7 @@ class Chef
         generator_context.encrypted_data_bag_secret = config[:encrypted_data_bag_secret]
         generator_context.first_boot = first_boot_content
         generator_context.generate_berksfile = config[:generate_berksfile]
+        generator_context.include_credentials = config[:include_credentials]
       end
 
       #
@@ -240,7 +247,7 @@ class Chef
       #
       def eval_current_system
         # Check to see if the Docker context already exists.
-        if File.exists?(File.join(config[:dockerfiles_path], @name_args[0]))
+        if File.exist?(File.join(config[:dockerfiles_path], @name_args[0]))
           if config[:force]
             FileUtils.rm_rf(File.join(config[:dockerfiles_path], @name_args[0]))
           else
