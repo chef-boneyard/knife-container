@@ -115,7 +115,7 @@ class Chef
         setup_context
         chef_runner.converge
         download_and_tag_base_image
-        puts "\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{@name_args[0]}", :magenta)}"
+        ui.info("\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{@name_args[0]}", :magenta)}")
       end
 
       #
@@ -147,14 +147,15 @@ class Chef
       #
       def set_config_defaults
         %w(
-          validation_key
-          validation_client_name
           chef_server_url
-          trusted_certs_dir
           cookbook_path
           node_path
           role_path
           environment_path
+          validation_key
+          validation_client_name
+          trusted_certs_dir
+          encrypted_data_bag_secret
         ).each do |var|
           config[:"#{var}"] ||= Chef::Config[:"#{var}"]
         end

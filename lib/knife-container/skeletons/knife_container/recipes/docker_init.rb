@@ -136,22 +136,24 @@ end
 #
 if context.chef_client_mode == "client"
 
+  directory File.join(temp_chef_repo, 'secure')
+
   # Add validation.pem
-  file File.join(temp_chef_repo, "validation.pem") do
+  file File.join(temp_chef_repo, 'secure', "validation.pem") do
     content File.read(context.validation_key)
     mode '0600'
   end
 
   # Copy over trusted certs
   unless Dir["#{context.trusted_certs_dir}/*"].empty?
-    directory File.join(temp_chef_repo, "trusted_certs")
-    execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, "trusted_certs/")}"
+    directory File.join(temp_chef_repo, 'secure', "trusted_certs")
+    execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, 'secure', "trusted_certs/")}"
   end
 
   # Copy over encrypted_data_bag_key
   unless context.encrypted_data_bag_secret.nil?
     if File.exists?(context.encrypted_data_bag_secret)
-      file File.join(temp_chef_repo, "encrypted_data_bag_secret") do
+      file File.join(temp_chef_repo, 'secure', "encrypted_data_bag_secret") do
        content File.read(context.encrypted_data_bag_secret)
        mode '0600'
       end
