@@ -45,6 +45,11 @@ file File.join(temp_chef_repo, "first-boot.json") do
   content context.first_boot
 end
 
+# Node Name
+template File.join(temp_chef_repo, ".node_name") do
+  source "node_name.erb"
+  helpers(KnifeContainer::Generator::TemplateHelper)
+end
 
 ##
 # Resolve run list
@@ -131,25 +136,29 @@ end
 #
 if context.chef_client_mode == "client"
 
+  directory File.join(temp_chef_repo, 'secure')
+
   # Add validation.pem
-  file File.join(temp_chef_repo, "validation.pem") do
+  file File.join(temp_chef_repo, 'secure', "validation.pem") do
     content File.read(context.validation_key)
     mode '0600'
   end
 
   # Copy over trusted certs
   unless Dir["#{context.trusted_certs_dir}/*"].empty?
-    directory File.join(temp_chef_repo, "trusted_certs")
-    execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, "trusted_certs/")}"
+    directory File.join(temp_chef_repo, 'secure', "trusted_certs")
+    execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, 'secure', "trusted_certs/")}"
   end
 
   # Copy over encrypted_data_bag_key
-  file File.join(temp_chef_repo, "encrypted_data_bag_secret") do
-   content File.read(context.encrypted_data_bag_secret)
-   mode '0600'
-   only_if { File.exists?(File.join(context.encrypted_data_bag_secret)) }
+  unless context.encrypted_data_bag_secret.nil?
+    if File.exists?(context.encrypted_data_bag_secret)
+      file File.join(temp_chef_repo, 'secure', "encrypted_data_bag_secret") do
+       content File.read(context.encrypted_data_bag_secret)
+       mode '0600'
+      end
+    end
   end
-
 end
 
 ##

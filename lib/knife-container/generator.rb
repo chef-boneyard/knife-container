@@ -40,6 +40,7 @@ module KnifeContainer
       attr_accessor :generate_berksfile
       attr_accessor :run_berks
       attr_accessor :force_build
+      attr_accessor :include_credentials
 
     end
 
@@ -79,6 +80,7 @@ module KnifeContainer
       delegate_to_app_context :generate_berksfile
       delegate_to_app_context :run_berks
       delegate_to_app_context :force_build
+      delegate_to_app_context :include_credentials
 
     end
 

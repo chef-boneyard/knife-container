@@ -229,7 +229,7 @@ describe Chef::Knife::ContainerDockerBuild do
         it "should delete the existing cookbooks directory and run berks.vendor" do
           expect(FileUtils).to receive(:rm_rf).with(File.join(docker_context, 'chef', 'cookbooks'))
           expect(knife).to receive(:run_berks_install)
-          expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+          expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef', 'cookbooks')}")
           knife.run_berks_vendor
         end
 
@@ -253,7 +253,7 @@ describe Chef::Knife::ContainerDockerBuild do
 
       it "should call berks.vendor" do
         expect(knife).to receive(:run_berks_install)
-        expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef')}")
+        expect(knife).to receive(:run_command).with("berks vendor #{File.join(docker_context, 'chef', 'cookbooks')}")
         knife.run_berks_vendor
       end
     end
@@ -276,6 +276,7 @@ describe Chef::Knife::ContainerDockerBuild do
       end
 
       it "should call berks install" do
+        knife.stub(:run_command).with("berks upload")
         expect(knife).to receive(:run_berks_install)
         knife.run_berks_upload
       end
@@ -306,7 +307,7 @@ describe Chef::Knife::ContainerDockerBuild do
     end
 
     it "should return valid command" do
-      expect(knife.docker_build_command).to eql("CHEF_NODE_NAME='docker/demo-build' docker build -t docker/demo #{default_dockerfiles_path}/docker/demo")
+      expect(knife.docker_build_command).to eql("docker build -t docker/demo #{default_dockerfiles_path}/docker/demo")
     end
   end
 
@@ -315,8 +316,8 @@ describe Chef::Knife::ContainerDockerBuild do
 
     context "running in server-mode" do
       it "should delete the node and client objects from the Chef Server" do
-        expect(knife).to receive(:destroy_item).with(Chef::Node, 'docker/demo-build', 'node')
-        expect(knife).to receive(:destroy_item).with(Chef::ApiClient, 'docker/demo-build', 'client')
+        expect(knife).to receive(:destroy_item).with(Chef::Node, 'docker-demo-build', 'node')
+        expect(knife).to receive(:destroy_item).with(Chef::ApiClient, 'docker-demo-build', 'client')
         knife.cleanup_artifacts
       end
     end

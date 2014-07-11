@@ -147,7 +147,7 @@ class Chef
         end
 
         run_berks_install
-        run_command("berks vendor #{chef_repo}")
+        run_command("berks vendor #{chef_repo}/cookbooks")
       end
 
       #
@@ -183,14 +183,19 @@ class Chef
       # The command to use to build the Docker image
       #
       def docker_build_command
-        "CHEF_NODE_NAME='#{node_name}' docker build -t #{@name_args[0]} #{docker_context}"
+        "docker build -t #{@name_args[0]} #{docker_context}"
       end
 
       #
       # Run a shell command from the Docker Context directory
       #
       def run_command(cmd)
-        shell_out(cmd, cwd: docker_context)
+        Open3.popen2e(cmd, chdir: docker_context) do |stdin, stdout_err, wait_thr|
+          while line = stdout_err.gets
+            puts line
+          end
+          wait_thr.value.to_i
+        end
       end
 
       #
@@ -217,7 +222,7 @@ class Chef
       # @return [String]
       #
       def node_name
-        return "#{@name_args[0]}-build"
+        "#{@name_args[0].gsub('/','-')}-build"
       end
 
       # Extracted from Chef::Knife.delete_object, because it has a

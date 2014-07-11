@@ -54,6 +54,12 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :include_credentials,
+        :long => "--include-credentials",
+        :description => "Include secure credentials in your Docker image",
+        :boolean => true,
+        :default => false
+
       option :validation_key,
         :long => "--validation-key PATH",
         :description => "The path to the validation key used by the client, typically a file named validation.pem"
@@ -115,6 +121,7 @@ class Chef
         setup_context
         chef_runner.converge
         download_and_tag_base_image
+        ui.info("\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{@name_args[0]}", :magenta)}")
       end
 
       #
@@ -146,20 +153,25 @@ class Chef
       #
       def set_config_defaults
         %w(
-          validation_key
-          validation_client_name
           chef_server_url
-          trusted_certs_dir
-          encrypted_data_bag_secret
           cookbook_path
           node_path
           role_path
           environment_path
+          validation_key
+          validation_client_name
+          trusted_certs_dir
+          encrypted_data_bag_secret
         ).each do |var|
           config[:"#{var}"] ||= Chef::Config[:"#{var}"]
         end
 
         config[:base_image] ||= "chef/ubuntu-12.04:latest"
+
+        # if no tag is specified, use latest
+        unless config[:base_image] =~ /[a-zA-Z0-9\/]+:[a-zA-Z0-9.\-]+/
+          config[:base_image] = "#{config[:base_image]}:latest"
+        end
 
         config[:run_list] ||= []
 
@@ -187,6 +199,7 @@ class Chef
         generator_context.encrypted_data_bag_secret = config[:encrypted_data_bag_secret]
         generator_context.first_boot = first_boot_content
         generator_context.generate_berksfile = config[:generate_berksfile]
+        generator_context.include_credentials = config[:include_credentials]
       end
 
       #
@@ -222,8 +235,11 @@ class Chef
       # Download the base Docker image and tag it with the image name
       #
       def download_and_tag_base_image
+        ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
         shell_out("docker pull #{config[:base_image]}")
-        shell_out("docker tag #{config[:base_image]} #{@name_args[0]}")
+        image_name = config[:base_image].split(':')[0]
+        ui.info("Tagging base image #{image_name} as #{@name_args[0]}")
+        shell_out("docker tag #{image_name} #{@name_args[0]}")
       end
 
       #
@@ -231,7 +247,7 @@ class Chef
       #
       def eval_current_system
         # Check to see if the Docker context already exists.
-        if File.exists?(File.join(config[:dockerfiles_path], @name_args[0]))
+        if File.exist?(File.join(config[:dockerfiles_path], @name_args[0]))
           if config[:force]
             FileUtils.rm_rf(File.join(config[:dockerfiles_path], @name_args[0]))
           else

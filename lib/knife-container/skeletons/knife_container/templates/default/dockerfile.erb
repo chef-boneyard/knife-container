@@ -2,5 +2,8 @@
 FROM <%= dockerfile_name %>
 ADD chef/ /etc/chef/
 RUN chef-init --bootstrap
+<% unless include_credentials -%>
+RUN rm -rf /etc/chef/secure/*
+<% end -%>
 ENTRYPOINT ["chef-init"]
 CMD ["--onboot"]
