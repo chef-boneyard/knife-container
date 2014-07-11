@@ -1,5 +1,5 @@
 module Knife
   module Container
-    VERSION = "0.1.2.dev"
+    VERSION = "0.2.0"
   end
 end
