@@ -35,6 +35,16 @@ initialized without the `-z` flag and a Berksfile exists, it will run
 ## Configuration
 This plugin allows certain values to be specified in your `knife.rb`
 
+### `knife[:dockerfiles_path]`
+Allows you to specify the directory where you wish to keep your Docker Contexts.
+By default this value is a folder named `dockerfiles` folder in your chef-repo
+directory.
+
+### `knife[:docker_image]`
+Allows you to specify what Docker Image should be used if the `-f` flag is not
+specified when you run `knife container docker init`. The default value is
+`chef/ubuntu-12.04:latest`.
+
 ### `knife[:berksfile_source]`
 Allows you to specify the source you wish to use in your generated Berksfiles.
 The default value is `https://supermarket.getchef.com`.
