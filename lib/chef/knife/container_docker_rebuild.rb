@@ -18,6 +18,7 @@
 require 'chef/knife'
 require 'chef/mixin/shell_out'
 require 'docker'
+require 'json'
 
 class Chef
   class Knife
@@ -84,8 +85,8 @@ class Chef
       #
       def redownload_docker_image
         base_image_name = parse_dockerfile_for_base
-        delete_image_history(@name_args[0], base_image_name)
         new_base_id = download_image(base_image_name)
+        delete_image(@name_args[0])
         tag_image(new_base_id, @name_args[0])
       end
 
@@ -110,33 +111,24 @@ class Chef
       #
       def download_image(image_name)
         ui.info("Downloading #{image_name} from Docker Hub")
-        img = Docker::Image.create('fromImage' => image_name)
+        image = image_name.split(':')
+        name = image[0]
+        tag = image[1]
+        if tag.nil?
+          img = Docker::Image.create(:fromImage => name)
+        else
+          img = Docker::Image.create(:fromImage => name, :tag => tag)
+        end
         img.id
       end
 
       #
-      # Delete all the images between HEAD and BASE
+      # Delete the specified image
       #
-      def delete_image_history(head, old_base)
-        ui.info("Deleting orphaned Docker Images")
-        head_image = Docker::Image.get(head)
-        old_base_image = Docker::Image.get(old_base)
-
-        history = head_image.history
-        i = 0
-
-        # recursively delete the intermediate images until
-        # we reach the old BASE image
-        begin
-          id = history[i]['Id']
-          unless id == old_base_image.id
-            status = Docker::Image.remove(id)
-            status.each do |action, id|
-              ui.debug("#{action} #{id}")
-            end
-          end
-          i += 1
-        end while history[i]['Id'] != old_base_image.id
+      def delete_image(image_name)
+        ui.info("Deleting orphaned Docker Image")
+        image = Docker::Image.get(image_name)
+        image.remove
       end
 
       #
@@ -144,7 +136,7 @@ class Chef
       #
       def tag_image(image_id, image_name, tag='latest')
         image = Docker::Image.get(image_id)
-        image.tag('repo' => image_name, 'tag' => tag)
+        image.tag(:repo => image_name, :tag => tag)
       end
 
       #
