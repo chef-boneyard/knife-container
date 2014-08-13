@@ -32,6 +32,13 @@ and vendor the required cookbooks into the required directory. If the image was
 initialized without the `-z` flag and a Berksfile exists, it will run
 `berks upload` and upload the required cookbooks to you Chef Server.
 
+## Configuration
+This plugin allows certain values to be specified in your `knife.rb`
+
+### `knife[:berksfile_source]`
+Allows you to specify the source you wish to use in your generated Berksfiles.
+The default value is `https://supermarket.getchef.com`.
+
 ## Contributing
 Please read [CONTRIBUTING.md](CONTRIBUTING.md)
 
