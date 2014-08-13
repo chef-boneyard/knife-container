@@ -35,6 +35,7 @@ describe Chef::Knife::ContainerDockerInit do
     Chef::Config.reset
     Chef::Config[:chef_repo_path] = tempdir
     Chef::Config[:knife][:dockerfiles_path] = File.join(tempdir, 'dockerfiles')
+    Chef::Config[:knife][:docker_image] = nil
     Chef::Config[:cookbook_path] = File.join(fixtures_path, 'cookbooks')
     Chef::Config[:chef_server_url] = "http://localhost:4000"
     Chef::Config[:validation_key] = File.join(fixtures_path, '.chef', 'validator.pem')
@@ -95,7 +96,10 @@ describe Chef::Knife::ContainerDockerInit do
   # Setting up the generator context
   #
   describe 'when setting up the generator context' do
-    before(:each) { reset_chef_config }
+    before(:each) {
+      reset_chef_config
+      Chef::Config[:knife][:docker_image] = 'chef/ubuntu-14.04:latest'
+    }
 
     context 'when no cli overrides have been specified' do
       let(:argv) { %w[ docker/demo ] }
@@ -110,6 +114,7 @@ describe Chef::Knife::ContainerDockerInit do
         expect(generator_context.environment_path).to eq(File.join(tempdir, 'environments'))
         expect(generator_context.dockerfiles_path).to eq(File.join(tempdir, 'dockerfiles'))
         expect(generator_context.run_list).to eq([])
+        expect(generator_context.base_image).to eq('chef/ubuntu-14.04:latest')
       end
 
       context 'when cookbook_path is an array' do
