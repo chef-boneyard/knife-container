@@ -62,7 +62,7 @@ describe Chef::Knife::ContainerDockerRebuild do
 
     it 'parses the Dockerfile for BASE and pulls down that image' do
       expect(knife).to receive(:parse_dockerfile_for_base).and_return('chef/ubuntu-12.04:latest')
-      expect(knife).to receive(:delete_image_history).with('docker/demo', 'chef/ubuntu-12.04:latest')
+      expect(knife).to receive(:delete_image).with('docker/demo')
       expect(knife).to receive(:download_image).with('chef/ubuntu-12.04:latest').and_return('0123456789ABCDEF')
       expect(knife).to receive(:tag_image).with('0123456789ABCDEF', 'docker/demo')
       knife.redownload_docker_image
@@ -100,22 +100,6 @@ describe Chef::Knife::ContainerDockerRebuild do
           expect(knife.parse_dockerfile_for_base).to eql('chef/ubuntu-12.04:latest')
         end
       end
-    end
-  end
-
-  describe "#delete_image_history" do
-    it 'deletes and/or stops containers that use orphaned images' do
-    end
-
-    it 'deletes the orphaned images' do
-    end
-  end
-
-  describe '#tag_image' do
-    let(:argv) { %w[ docker/demo ] }
-    let(:base_image) { 'chef/ubuntu-12.04:latest' }
-
-    it 'tags the BASE image as the Dockerfile name' do
     end
   end
 

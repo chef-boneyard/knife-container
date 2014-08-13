@@ -1,5 +1,15 @@
 # Knife Container Changelog
 
+## v1.0.0.rc.0
+* Added 'docker container rebuild' subcommand
+* Added `Chef::Config[:knife][:docker_image]` configuration value to allow for the
+specification of what the default Docker Image should be. The default value is
+`chef/ubuntu-12.04:latest`
+* Added `Chef::Config[:knife][:berksfile_source]` configuration value to allow for
+specification of which source you'd like to use in a generated Berksfile. The
+default value is `https://supermarket.getchef.com`.
+* [GH-6] Use supermarket as the default Berkshelf source.
+
 ## v0.2.3 (2014-09-19)
 * [GH-39] Fixed `--dockerfiles-path` parameter which did not properly accept input.
 * [GH-38] Fixed issue where cookbooks would appear more than once in the Berksfile.
