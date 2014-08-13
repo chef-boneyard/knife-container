@@ -113,6 +113,40 @@ class Chef
       end
 
       #
+      # Downloads the specified Docker Image from the Registry
+      # TODO: print out status
+      #
+      def download_image(image_name)
+        ui.info("Downloading #{image_name} from Docker Hub")
+        image = image_name.split(':')
+        name = image[0]
+        tag = image[1]
+        if tag.nil?
+          img = Docker::Image.create(:fromImage => name)
+        else
+          img = Docker::Image.create(:fromImage => name, :tag => tag)
+        end
+        img.id
+      end
+
+      #
+      # Delete the specified image
+      #
+      def delete_image(image_name)
+        ui.info("Deleting orphaned Docker Image")
+        image = Docker::Image.get(image_name)
+        image.remove
+      end
+
+      #
+      # Tag the specified Docker Image
+      #
+      def tag_image(image_id, image_name, tag='latest')
+        image = Docker::Image.get(image_id)
+        image.tag(:repo => image_name, :tag => tag)
+      end
+
+      #
       # Run Chef::Knife::ContainerDockerBuild
       #
       #   Note: @cli_arguments is a global var from Mixlib::CLI where argv is
