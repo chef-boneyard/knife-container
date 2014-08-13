@@ -176,6 +176,8 @@ class Chef
 
         config[:base_image] ||= Chef::Config[:knife][:docker_image] || 'chef/ubuntu-12.04:latest'
 
+        config[:berksfile_source] ||= Chef::Config[:knife][:berksfile_source]
+
         # if no tag is specified, use latest
         unless config[:base_image] =~ /[a-zA-Z0-9\/]+:[a-zA-Z0-9.\-]+/
           config[:base_image] = "#{config[:base_image]}:latest"
@@ -209,6 +211,7 @@ class Chef
         generator_context.encrypted_data_bag_secret = config[:encrypted_data_bag_secret]
         generator_context.first_boot = first_boot_content
         generator_context.generate_berksfile = config[:generate_berksfile]
+        generator_context.berksfile_source = config[:berksfile_source]
         generator_context.include_credentials = config[:include_credentials]
       end
 

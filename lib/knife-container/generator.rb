@@ -37,6 +37,7 @@ module KnifeContainer
       attr_accessor :encrypted_data_bag_secret
       attr_accessor :first_boot
       attr_accessor :berksfile
+      attr_accessor :berksfile_source
       attr_accessor :generate_berksfile
       attr_accessor :run_berks
       attr_accessor :force_build
@@ -77,6 +78,7 @@ module KnifeContainer
       delegate_to_app_context :encrypted_data_bag_secret
       delegate_to_app_context :first_boot
       delegate_to_app_context :berksfile
+      delegate_to_app_context :berksfile_source
       delegate_to_app_context :generate_berksfile
       delegate_to_app_context :run_berks
       delegate_to_app_context :force_build
