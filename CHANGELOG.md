@@ -1,6 +1,7 @@
 # Knife Container Changelog
 
 ## v1.0.0.rc.0
+* Added 'docker container rebuild' subcommand
 * Added `Chef::Config[:knife][:docker_image]` configuration value to allow for the
 specification of what the default Docker Image should be. The default value is
 `chef/ubuntu-12.04:latest`
