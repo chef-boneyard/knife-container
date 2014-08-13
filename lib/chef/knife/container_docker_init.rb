@@ -174,7 +174,7 @@ class Chef
           config[:"#{var}"] ||= Chef::Config[:"#{var}"]
         end
 
-        config[:base_image] ||= "chef/ubuntu-12.04:latest"
+        config[:base_image] ||= Chef::Config[:knife][:docker_image] || 'chef/ubuntu-12.04:latest'
 
         # if no tag is specified, use latest
         unless config[:base_image] =~ /[a-zA-Z0-9\/]+:[a-zA-Z0-9.\-]+/
