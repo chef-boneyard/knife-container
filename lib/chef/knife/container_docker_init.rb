@@ -175,7 +175,7 @@ class Chef
 
         config[:base_image] ||= Chef::Config[:knife][:docker_image] || 'chef/ubuntu-12.04:latest'
 
-        config[:berksfile_source] ||= Chef::Config[:knife][:berksfile_source]
+        config[:berksfile_source] ||= Chef::Config[:knife][:berksfile_source] || 'https://supermarket.getchef.com'
 
         # if no tag is specified, use latest
         unless config[:base_image] =~ /[a-zA-Z0-9\/]+:[a-zA-Z0-9.\-]+/
