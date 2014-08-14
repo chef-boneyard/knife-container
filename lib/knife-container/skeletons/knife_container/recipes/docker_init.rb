@@ -80,7 +80,7 @@ end
 unless context.run_list.empty?
   template File.join(dockerfile_dir, "Berksfile") do
     source "berksfile.erb"
-    variables :cookbooks => cookbooks
+    variables({:cookbooks => cookbooks, :berksfile_source => context.berksfile_source})
     helpers(KnifeContainer::Generator::TemplateHelper)
     only_if { context.generate_berksfile }
   end
