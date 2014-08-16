@@ -222,7 +222,7 @@ class Chef
       # @return [String]
       #
       def node_name
-        "#{@name_args[0].gsub('/','-')}-build"
+        File.read(File.join(chef_repo, ".node_name")).strip
       end
 
       # Extracted from Chef::Knife.delete_object, because it has a

@@ -313,6 +313,7 @@ describe Chef::Knife::ContainerDockerBuild do
 
   describe "#cleanup_artifacts" do
     let(:argv) { %w[ docker/demo ] }
+    before { allow(knife).to receive(:node_name).and_return('docker-demo-build') }
 
     context "running in server-mode" do
       it "should delete the node and client objects from the Chef Server" do
