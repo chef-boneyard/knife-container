@@ -1,6 +1,6 @@
 # Knife Container Changelog
 
-## v1.0.0.rc.0
+## v1.0.0 (unreleased)
 * Added 'docker container rebuild' subcommand
 * Added `Chef::Config[:knife][:docker_image]` configuration value to allow for the
 specification of what the default Docker Image should be. The default value is
@@ -9,6 +9,10 @@ specification of what the default Docker Image should be. The default value is
 specification of which source you'd like to use in a generated Berksfile. The
 default value is `https://supermarket.getchef.com`.
 * [GH-6] Use supermarket as the default Berkshelf source.
+* [FSE-188] Method for stripping secure credentials resulted in intermediate
+image with those credentials still present. Stripping out those intermediate
+layers is now the responsibility of `chef-init --bootstrap`. Reported by Andrew
+Hsu.
 
 ## v0.2.3 (2014-09-19)
 * [GH-39] Fixed `--dockerfiles-path` parameter which did not properly accept input.
