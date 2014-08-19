@@ -283,10 +283,6 @@ describe Chef::Knife::ContainerDockerInit do
         it 'should set the base_image name in a comment in the Dockerfile' do
           expect(dockerfile).to include '# BASE chef/ubuntu-12.04:latest'
         end
-
-        it 'should remove the secure directory' do
-          expect(dockerfile).to include 'RUN rm -rf /etc/chef/secure/*'
-        end
       end
 
       context 'when include_credentials is specified' do
@@ -298,7 +294,7 @@ describe Chef::Knife::ContainerDockerInit do
         end
 
         it 'should not remove the secure directory' do
-          expect(dockerfile).not_to include 'RUN rm -rf /etc/chef/secure/*'
+          expect(dockerfile).to include 'RUN chef-init --bootstrap --no-remove-secure'
         end
       end
     end
