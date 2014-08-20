@@ -351,6 +351,7 @@ describe Chef::Knife::ContainerDockerInit do
         %w[
           Dockerfile
           .dockerignore
+          .gitignore
           chef/first-boot.json
           chef/zero.rb
           chef/.node_name
@@ -384,6 +385,7 @@ describe Chef::Knife::ContainerDockerInit do
         %w[
           Dockerfile
           .dockerignore
+          .gitignore
           chef/first-boot.json
           chef/client.rb
           chef/secure/validation.pem
