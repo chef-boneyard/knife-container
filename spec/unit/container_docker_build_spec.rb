@@ -81,6 +81,27 @@ describe Chef::Knife::ContainerDockerBuild do
         knife.run
       end
     end
+
+    context "when --secure-dir is passed" do
+      let(:argv) { %w[ docker/demo --secure-dir /path/to/dir ] }
+
+      before do
+        allow(File).to receive(:directory?).with('/path/to/dir').and_return(true)
+        allow(File).to receive(:exist?).with('/path/to/dir/validation.pem').and_return(true)
+        allow(File).to receive(:exist?).with('/path/to/dir/client.pem').and_return(false)
+      end
+
+      it 'uses contents of specified directory for secure credentials during build' do
+        # rename `secure` to `backup_secure`
+        # copy contents of specified directory into `secure`
+        expect(knife).to receive(:backup_secure)
+        # runs build
+        # deletes `secure`
+        # restores from `backup secure`
+        expect(knife).to receive(:restore_secure)
+        knife.run
+      end
+    end
   end
 
   describe '#read_and_validate_params' do
@@ -128,6 +149,33 @@ describe Chef::Knife::ContainerDockerBuild do
           expect(knife.config[:run_berks]).to eql(false)
         end
       end
+    end
+
+    context "when --secure-dir is passed" do
+      let(:argv) { %w[ docker/demo --secure-dir /path/to/dir ] }
+
+      context "and directory does not exist" do
+        before { allow(File).to receive(:directory?).with('/path/to/dir').and_return(false) }
+
+        it 'throws an error' do
+          expect(knife.ui).to receive(:fatal)
+          expect { knife.read_and_validate_params }.to raise_error(SystemExit)
+        end
+      end
+
+      context 'and validation or client key does not exist' do
+        before do
+          allow(File).to receive(:directory?).with('/path/to/dir').and_return(false)
+          allow(File).to receive(:exist?).with('/path/to/dir/validation.pem').and_return(false)
+          allow(File).to receive(:exist?).with('/path/to/dir/client.pem').and_return(false)
+        end
+
+        it 'throws an error' do
+          expect(knife.ui).to receive(:fatal)
+          expect { knife.read_and_validate_params }.to raise_error(SystemExit)
+        end
+      end
+
     end
   end
 

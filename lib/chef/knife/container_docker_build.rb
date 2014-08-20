@@ -43,6 +43,10 @@ class Chef
         :default => true,
         :boolean => true
 
+      option :secure_dir,
+        :long => "--secure-dir DIR",
+        :description => "Path to a local repository that contains Chef credentials."
+
       option :force_build,
         :long => "--force",
         :description => "Force the Docker image build",
@@ -61,7 +65,9 @@ class Chef
         read_and_validate_params
         setup_config_defaults
         run_berks if config[:run_berks]
+        backup_secure unless config[:secure_dir].nil?
         build_image
+        restore_secure unless config[:secure_dir].nil?
         cleanup_artifacts if config[:cleanup]
       end
 
@@ -74,6 +80,21 @@ class Chef
           show_usage
           ui.fatal("You must specify a Dockerfile name")
           exit 1
+        end
+
+        # if secure_dir doesn't exist or is missing files, exit
+        if config[:secure_dir]
+          case
+          when !File.directory?(config[:secure_dir])
+            ui.fatal("SECURE_DIRECTORY: The directory #{config[:secure_dir]}" \
+              " does not exist.")
+            exit 1
+          when !File.exist?(File.join(config[:secure_dir], 'validation.pem')) &&
+            !File.exist?(File.join(config[:secure_dir], 'client.pem'))
+            ui.fatal("SECURE_DIRECTORY: Can not find validation.pem or client.pem" \
+              " in #{config[:secure_dir]}.")
+            exit 1
+          end
         end
 
         # if berkshelf isn't installed, set run_berks to false
@@ -167,6 +188,29 @@ class Chef
       #
       def build_image
         run_command(docker_build_command)
+      end
+
+      #
+      # Move `secure` folder to `backup_secure` and copy the config[:secure_dir]
+      # to the new `secure` folder.
+      #
+      # Note: The .dockerignore file has a line to ignore backup secure to it
+      #       should not be included in the image.
+      #
+      def backup_secure
+        FileUtils.mv("#{docker_context}/chef/secure",
+          "#{docker_context}/chef/secure_backup")
+        FileUtils.cp_r(config[:secure_dir], "#{docker_context}/chef/secure")
+      end
+
+      #
+      # Delete the temporary secure directory and restore the original from the
+      # backup.
+      #
+      def restore_secure
+        FileUtils.rm_rf("#{docker_context}/chef/secure")
+        FileUtils.mv("#{docker_context}/chef/secure_backup",
+          "#{docker_context}/chef/secure")
       end
 
       #
