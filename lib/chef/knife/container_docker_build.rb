@@ -18,6 +18,7 @@
 require 'chef/knife'
 require 'knife-container/helpers'
 require 'chef/mixin/shell_out'
+require 'mkmf'
 
 class Chef
   class Knife
@@ -110,15 +111,15 @@ class Chef
         end
 
         # if berkshelf isn't installed, set run_berks to false
-        if config[:run_berks] && berks_installed?
-          ver = shell_out("berks -v")
-          config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
+        unless berks_installed?
+          ui.warn("The berks executable could not be found. Resolving the Berksfile will be skipped.")
+          config[:run_berks] = false
+        end
 
-          if config[:berks_config]
-            unless File.exists?(config[:berks_config])
-              ui.fatal("No Berksfile configuration found at #{config[:berks_config]}")
-              exit 1
-            end
+        if config[:berks_config]
+          unless File.exists?(config[:berks_config])
+            ui.fatal("No Berksfile configuration found at #{config[:berks_config]}")
+            exit 1
           end
         end
       end
@@ -163,6 +164,15 @@ class Chef
       #
       def berksfile_exists?
         File.exists?(File.join(docker_context, "Berksfile"))
+      end
+
+      #
+      # Determines whether Berkshelf is installed
+      #
+      # @returns [TrueClass, FalseClass]
+      #
+      def berks_installed?
+        find_executable('berks').nil? ? false : true
       end
 
       #
