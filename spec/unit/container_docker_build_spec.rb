@@ -46,6 +46,7 @@ describe Chef::Knife::ContainerDockerBuild do
       knife.stub(:run_berks)
       knife.stub(:build_image)
       knife.stub(:cleanup_artifacts)
+      allow(knife).to receive(:berks_installed?).and_return(true)
       Chef::Config.reset
       Chef::Config[:chef_repo_path] = tempdir
       File.stub(:exists?).with(File.join(tempdir, 'dockerfiles', 'docker', 'demo', 'chef', 'zero.rb')).and_return(true)
@@ -107,6 +108,8 @@ describe Chef::Knife::ContainerDockerBuild do
   describe '#read_and_validate_params' do
     let(:argv) { %W[] }
 
+    before { allow(knife).to receive(:berks_installed?).and_return(true) }
+
     context 'argv is empty' do
       it 'should should print usage and exit' do
         expect(knife).to receive(:show_usage)
@@ -117,11 +120,13 @@ describe Chef::Knife::ContainerDockerBuild do
 
     context "when Berkshelf is not installed" do
       let(:argv) { %w[ docker/demo ] }
-      let(:berks_output) { double("berks -v output", stdout: "berks not found") }
 
-      it 'should set config[:cleanup] to true' do
+      before { allow(knife).to receive(:berks_installed?).and_return(false) }
+
+      it 'does not run berks' do
+        expect(knife.ui).to receive(:warn)
         knife.read_and_validate_params
-        knife.config[:cleanup].should eql(true)
+        expect(knife.config[:run_berks]).to eql(false)
       end
     end
 
