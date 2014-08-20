@@ -77,7 +77,7 @@ class Chef
         end
 
         # if berkshelf isn't installed, set run_berks to false
-        if config[:run_berks]
+        if config[:run_berks] && berks_installed?
           ver = shell_out("berks -v")
           config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
         end
