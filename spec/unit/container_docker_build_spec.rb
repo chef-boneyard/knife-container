@@ -82,6 +82,22 @@ describe Chef::Knife::ContainerDockerBuild do
         knife.run
       end
     end
+
+    context "when --secure-dir is passed" do
+      let(:argv) { %w[ docker/demo --secure-dir /path/to/dir ] }
+
+      before do
+        allow(File).to receive(:directory?).with('/path/to/dir').and_return(true)
+        allow(File).to receive(:exist?).with('/path/to/dir/validation.pem').and_return(true)
+        allow(File).to receive(:exist?).with('/path/to/dir/client.pem').and_return(false)
+      end
+
+      it 'uses contents of specified directory for secure credentials during build' do
+        expect(knife).to receive(:backup_secure)
+        expect(knife).to receive(:restore_secure)
+        knife.run
+      end
+    end
   end
 
   describe '#read_and_validate_params' do
@@ -97,7 +113,7 @@ describe Chef::Knife::ContainerDockerBuild do
       end
     end
 
-    context "when Berkshelf is not installed" do
+    context 'when Berkshelf is not installed' do
       let(:argv) { %w[ docker/demo ] }
 
       before { allow(knife).to receive(:berks_installed?).and_return(false) }
@@ -109,23 +125,23 @@ describe Chef::Knife::ContainerDockerBuild do
       end
     end
 
-    context "--no-cleanup was passed" do
+    context '--no-cleanup was passed' do
       let(:argv) { %w[ docker/demo --no-cleanup ] }
 
       it 'should set config[:cleanup] to false' do
         knife.read_and_validate_params
-        knife.config[:cleanup].should eql(false)
+        expect(knife.config[:cleanup]).to eql(false)
       end
     end
 
-    context "--no-berks was not passed" do
+    context '--no-berks was not passed' do
       let(:argv) { %w[ docker/demo ] }
 
       context "and Berkshelf is not installed" do
         let(:berks_output) { double("berks -v output", stdout: "berks not found") }
 
         before do
-          knife.stub(:shell_out).with("berks -v").and_return(berks_output)
+          allow(knife).to receive(:berks_installed?).and_return(false)
         end
 
         it 'should set run_berks to false' do
@@ -135,17 +151,43 @@ describe Chef::Knife::ContainerDockerBuild do
       end
     end
 
-    context "--berks-config was passed" do
+    context '--berks-config was passed' do
       let(:argv) { %w[ docker/demo --berks-config my_berkshelf/config.json ] }
 
-      context "and configuration file does not exist" do
+      context 'and configuration file does not exist' do
         before do
-          File.stub(:exists?).with('my_berkshelf/config.json').and_return(false)
+          allow(File).to receive(:exists?).with('my_berkshelf/config.json').and_return(false)
         end
 
-        it 'should exit immediately' do
+        it 'exits immediately' do
           expect(knife.ui).to receive(:fatal)
-          expect { knife.run }.to raise_error(SystemExit)
+          expect { knife.read_and_validate_params }.to raise_error(SystemExit)
+        end
+      end
+    end
+
+    context "when --secure-dir is passed" do
+      let(:argv) { %w[ docker/demo --secure-dir /path/to/dir ] }
+
+      context "and directory does not exist" do
+        before { allow(File).to receive(:directory?).with('/path/to/dir').and_return(false) }
+
+        it 'throws an error' do
+          expect(knife.ui).to receive(:fatal)
+          expect { knife.read_and_validate_params }.to raise_error(SystemExit)
+        end
+      end
+
+      context 'and validation or client key does not exist' do
+        before do
+          allow(File).to receive(:directory?).with('/path/to/dir').and_return(false)
+          allow(File).to receive(:exist?).with('/path/to/dir/validation.pem').and_return(false)
+          allow(File).to receive(:exist?).with('/path/to/dir/client.pem').and_return(false)
+        end
+
+        it 'throws an error' do
+          expect(knife.ui).to receive(:fatal)
+          expect { knife.read_and_validate_params }.to raise_error(SystemExit)
         end
       end
     end
