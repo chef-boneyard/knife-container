@@ -177,6 +177,8 @@ class Chef
 
         Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
+
+        config
       end
 
       #
