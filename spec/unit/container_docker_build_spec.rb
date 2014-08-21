@@ -190,7 +190,16 @@ describe Chef::Knife::ContainerDockerBuild do
           expect { knife.read_and_validate_params }.to raise_error(SystemExit)
         end
       end
+    end
 
+    context 'when an invalid dockerfile name is given' do
+      let(:argv) { %w[ http://reg.example.com/demo ] }
+
+      it 'throws an error' do
+        expect(knife).to receive(:valid_dockerfile_name?).and_return(false)
+        expect(knife.ui).to receive(:fatal)
+        expect{ knife.read_and_validate_params }.to raise_error(SystemExit)
+      end
     end
   end
 
@@ -390,14 +399,21 @@ describe Chef::Knife::ContainerDockerBuild do
   end
 
   describe "#docker_build_command" do
-    let(:argv) { %W[ docker/demo ] }
+    let(:argv) { %W[ reg.example.com/demo ] }
 
     before(:each) do
      knife.config[:dockerfiles_path] = default_dockerfiles_path
     end
 
     it "should return valid command" do
-      expect(knife.docker_build_command).to eql("docker build -t docker/demo #{default_dockerfiles_path}/docker/demo")
+      expect(knife.docker_build_command).to eql("docker build -t reg_example_com/demo #{default_dockerfiles_path}/reg_example_com/demo")
+    end
+  end
+
+  describe '#dockerfile_name' do
+    it 'encodes the dockerfile name' do
+      expect(knife).to receive(:encoded_dockerfile_name)
+      knife.dockerfile_name
     end
   end
 
