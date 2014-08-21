@@ -16,12 +16,14 @@
 #
 
 require 'chef/knife'
+require 'knife-container/helpers'
 require 'chef/mixin/shell_out'
 
 class Chef
   class Knife
     class ContainerDockerBuild < Knife
       include Chef::Mixin::ShellOut
+      include KnifeContainer::Helpers
 
       deps do
         # These two are needed for cleanup
@@ -83,6 +85,12 @@ class Chef
         if @name_args.length < 1
           show_usage
           ui.fatal("You must specify a Dockerfile name")
+          exit 1
+        end
+
+        unless valid_dockerfile_name?(@name_args[0])
+          show_usage
+          ui.fatal("Your Dockerfile name cannot include a protocol or a tag.")
           exit 1
         end
 
@@ -237,7 +245,7 @@ class Chef
       # The command to use to build the Docker image
       #
       def docker_build_command
-        "docker build -t #{@name_args[0]} #{docker_context}"
+        "docker build -t #{dockerfile_name} #{docker_context}"
       end
 
       #
@@ -258,7 +266,14 @@ class Chef
       # @return [String]
       #
       def docker_context
-        File.join(config[:dockerfiles_path], @name_args[0])
+        File.join(config[:dockerfiles_path], dockerfile_name)
+      end
+
+      #
+      # Returns the encoded Dockerfile name
+      #
+      def dockerfile_name
+        encoded_dockerfile_name(@name_args[0])
       end
 
       #

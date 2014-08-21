@@ -18,6 +18,7 @@
 require 'json'
 require 'chef/knife'
 require 'knife-container/command'
+require 'knife-container/helpers'
 require 'chef/mixin/shell_out'
 
 class Chef
@@ -25,6 +26,7 @@ class Chef
     class ContainerDockerInit < Knife
 
       include KnifeContainer::Command
+      include KnifeContainer::Helpers
       include Chef::Mixin::ShellOut
 
       banner "knife container docker init REPO/NAME [options]"
@@ -133,6 +135,12 @@ class Chef
           exit 1
         end
 
+        unless valid_dockerfile_name?(@name_args[0])
+          show_usage
+          ui.fatal("Your Dockerfile name cannot include a protocol or a tag.")
+          exit 1
+        end
+
         if config[:generate_berksfile]
           begin
             require 'berkshelf'
@@ -181,7 +189,7 @@ class Chef
       # Setup the generator context
       #
       def setup_context
-        generator_context.dockerfile_name = @name_args[0]
+        generator_context.dockerfile_name = encoded_dockerfile_name(@name_args[0])
         generator_context.dockerfiles_path = config[:dockerfiles_path]
         generator_context.base_image = config[:base_image]
         generator_context.chef_client_mode = chef_client_mode
