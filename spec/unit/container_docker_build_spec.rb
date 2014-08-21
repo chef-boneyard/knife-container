@@ -129,6 +129,21 @@ describe Chef::Knife::ContainerDockerBuild do
         end
       end
     end
+
+    context "--berks-config was passed" do
+      let(:argv) { %w[ docker/demo --berks-config my_berkshelf/config.json ] }
+
+      context "and configuration file does not exist" do
+        before do
+          File.stub(:exists?).with('my_berkshelf/config.json').and_return(false)
+        end
+
+        it 'should exit immediately' do
+          expect(knife.ui).to receive(:fatal)
+          expect { knife.run }.to raise_error(SystemExit)
+        end
+      end
+    end
   end
 
   describe '#setup_config_defaults' do
@@ -294,6 +309,33 @@ describe Chef::Knife::ContainerDockerBuild do
 
       it "should run berks upload with force" do
         expect(knife).to receive(:run_command).with("berks upload --force")
+        knife.run_berks_upload
+      end
+    end
+
+    context "when berks-config is specified" do
+      before do
+        knife.config[:berks_config] = 'my_berkshelf/config.json'
+        File.stub(:exists?).with('my_berkshelf/config.json').and_return(true)
+        File.stub(:expand_path).with('my_berkshelf/config.json').and_return('/home/my_berkshelf/config.json')
+      end
+
+      it "should run berks upload with specified config file" do
+        expect(knife).to receive(:run_command).with("berks upload --config=/home/my_berkshelf/config.json")
+        knife.run_berks_upload
+      end
+    end
+
+    context "when berks-config _and_ force-build is specified" do
+      before do
+        knife.config[:force_build] = true
+        knife.config[:berks_config] = 'my_berkshelf/config.json'
+        File.stub(:exists?).with('my_berkshelf/config.json').and_return(true)
+        File.stub(:expand_path).with('my_berkshelf/config.json').and_return('/home/my_berkshelf/config.json')
+      end
+
+      it "should run berks upload with specified config file _and_ force flag" do
+        expect(knife).to receive(:run_command).with("berks upload --force --config=/home/my_berkshelf/config.json")
         knife.run_berks_upload
       end
     end

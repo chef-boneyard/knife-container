@@ -37,6 +37,10 @@ class Chef
         :default => true,
         :boolean => true
 
+      option :berks_config,
+        :long => "--berks-config CONFIG",
+        :description => "Use the specified Berkshelf configuration"
+
       option :cleanup,
         :long => "--[no-]cleanup",
         :description => "Cleanup Chef and Docker artifacts",
@@ -80,6 +84,13 @@ class Chef
         if config[:run_berks]
           ver = shell_out("berks -v")
           config[:run_berks] = ver.stdout.match(/\d+\.\d+\.\d+/) ? true : false
+
+          if config[:berks_config]
+            unless File.exists?(config[:berks_config])
+              ui.fatal("No Berksfile configuration found at #{config[:berks_config]}")
+              exit 1
+            end
+          end
         end
       end
 
@@ -155,11 +166,10 @@ class Chef
       #
       def run_berks_upload
         run_berks_install
-        if config[:force_build]
-          run_command("berks upload --force")
-        else
-          run_command("berks upload")
-        end
+        berks_upload_cmd = "berks upload"
+        berks_upload_cmd << " --force" if config[:force_build]
+        berks_upload_cmd << " --config=#{File.expand_path(config[:berks_config])}" if config[:berks_config]
+        run_command(berks_upload_cmd)
       end
 
       #
