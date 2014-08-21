@@ -92,6 +92,16 @@ describe Chef::Knife::ContainerDockerInit do
         expect(defined?(Berkshelf)).to eql('constant')
       end
     end
+
+    context 'when an invalid dockerfile name is given' do
+      let(:argv) { %w[ http://reg.example.com/demo ] }
+
+      it 'throws an error' do
+        expect(knife).to receive(:valid_dockerfile_name?).and_return(false)
+        expect(knife.ui).to receive(:fatal)
+        expect{ knife.read_and_validate_params }.to raise_error(SystemExit)
+      end
+    end
   end
 
   #
@@ -147,6 +157,7 @@ describe Chef::Knife::ContainerDockerInit do
 
   describe '#setup_context' do
     it 'calls helper methods to calculate more complex values' do
+      expect(knife).to receive(:encoded_dockerfile_name).with('docker/demo')
       expect(knife).to receive(:chef_client_mode)
       expect(knife).to receive(:first_boot_content)
       knife.setup_context
