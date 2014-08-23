@@ -14,20 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+require 'chef/knife'
+require 'knife-container/command'
 require 'knife-container/helpers/berkshelf'
 require 'knife-container/helpers/docker'
 
-module KnifeContainer
-  module Helpers
+class Chef
+  class Knife
+    module ContainerDockerBase
+      include KnifeContainer::Command
+      include KnifeContainer::Helpers::Berkshelf
+      include KnifeContainer::Helpers::Docker
 
-    #
-    # Generates a short, but random UID for instances.
-    #
-    # @return [String]
-    #
-    def random_uid
-      require 'securerandom' unless defined?(SecureRandom)
-      SecureRandom.hex(3)
+      
     end
   end
 end
