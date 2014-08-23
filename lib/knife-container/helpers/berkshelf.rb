@@ -14,20 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-require 'knife-container/helpers/berkshelf'
-require 'knife-container/helpers/docker'
+require 'mkmf'
 
 module KnifeContainer
   module Helpers
+    module Berkshelf
 
-    #
-    # Generates a short, but random UID for instances.
-    #
-    # @return [String]
-    #
-    def random_uid
-      require 'securerandom' unless defined?(SecureRandom)
-      SecureRandom.hex(3)
+      #
+      # Determines whether Berkshelf is installed
+      #
+      # @returns [TrueClass, FalseClass]
+      #
+      def berks_installed?
+        find_executable('berks').nil? ? false : true
+      end
+
     end
   end
 end
