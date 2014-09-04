@@ -114,7 +114,7 @@ class Chef
         setup_context
         chef_runner.converge
         download_and_tag_base_image
-        ui.info("\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{@name_args[0]}", :magenta)}")
+        ui.info("\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{dockerfile_name}", :magenta)}")
       end
 
       #
@@ -141,6 +141,14 @@ class Chef
           end
         end
 
+        # Check to see if the Docker context already exists.
+        if File.exist?(File.join(config[:dockerfiles_path], dockerfile_name))
+          if config[:force]
+            FileUtils.rm_rf(File.join(config[:dockerfiles_path], dockerfile_name))
+          else
+            show_usage
+            ui.fatal('The Docker Context you are trying to create already exists. ' \
+              'Please use the --force flag if you would like to re-create this context.')
             exit 1
           end
         end
@@ -176,13 +184,15 @@ class Chef
         config[:run_list] ||= []
 
         config[:dockerfiles_path] ||= Chef::Config[:knife][:dockerfiles_path] || File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
+
+        config
       end
 
       #
       # Setup the generator context
       #
       def setup_context
-        generator_context.dockerfile_name = encoded_dockerfile_name(@name_args[0])
+        generator_context.dockerfile_name = dockerfile_name
         generator_context.dockerfiles_path = config[:dockerfiles_path]
         generator_context.base_image = config[:base_image]
         generator_context.chef_client_mode = chef_client_mode
@@ -209,6 +219,12 @@ class Chef
       #
       def recipe
         'docker_init'
+      end
+
+      #
+      # @return [String] the encoded name of the dockerfile
+      def dockerfile_name
+        parse_dockerfile_name(@name_args[0])
       end
 
       #

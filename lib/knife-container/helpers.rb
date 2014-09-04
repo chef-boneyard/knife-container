@@ -19,6 +19,8 @@ require 'knife-container/helpers/docker'
 
 module KnifeContainer
   module Helpers
+    include KnifeContainer::Helpers::Berkshelf
+    include KnifeContainer::Helpers::Docker
 
     #
     # Generates a short, but random UID for instances.

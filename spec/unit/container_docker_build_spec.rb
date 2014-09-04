@@ -412,7 +412,7 @@ describe Chef::Knife::ContainerDockerBuild do
 
   describe '#dockerfile_name' do
     it 'encodes the dockerfile name' do
-      expect(knife).to receive(:encode_dockerfile_name)
+      expect(knife).to receive(:parse_dockerfile_name)
       knife.dockerfile_name
     end
   end

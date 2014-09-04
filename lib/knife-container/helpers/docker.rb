@@ -41,7 +41,7 @@ module KnifeContainer
       #
       # Converts the dockerfile name into something safe
       #
-      def encode_dockerfile_name(name)
+      def parse_dockerfile_name(name)
         name.gsub(/[\.\:]/, '_')
       end
 
@@ -60,6 +60,13 @@ module KnifeContainer
           img = Docker::Image.create(:fromImage => name, :tag => tag)
         end
         img.id
+      end
+
+      #
+      # Build Docker Image
+      #
+      def build_image
+
       end
 
 
