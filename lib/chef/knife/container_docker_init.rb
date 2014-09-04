@@ -15,19 +15,13 @@
 # limitations under the License.
 #
 
-require 'json'
-require 'chef/knife'
-require 'knife-container/command'
-require 'knife-container/helpers'
-require 'chef/mixin/shell_out'
+require 'chef/knife/container_docker_base'
 
 class Chef
   class Knife
     class ContainerDockerInit < Knife
+      include Knife::ContainerDockerBase
 
-      include KnifeContainer::Command
-      include KnifeContainer::Helpers
-      include Chef::Mixin::ShellOut
 
       banner "knife container docker init REPO/NAME [options]"
 
