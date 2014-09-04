@@ -78,6 +78,13 @@ module KnifeContainer
         exit 1
       end
 
+      #
+      # Build Docker Image
+      #
+      def build_image
+
+      end
+
 
       #
       # Delete the specified image
