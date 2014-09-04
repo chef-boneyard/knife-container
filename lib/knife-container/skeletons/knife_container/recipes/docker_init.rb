@@ -97,9 +97,9 @@ if context.chef_client_mode == 'zero'
   # depsolver in the chef-client. The solution here is to use the Berkshelf integration.
   if context.cookbook_path.kind_of?(Array)
     context.cookbook_path.each do |dir|
-      if File.exists?(File.expand_path(dir))
+      if File.exist?(File.expand_path(dir))
         cookbooks.each do |cookbook|
-          if File.exists?("#{File.expand_path(dir)}/#{cookbook}")
+          if File.exist?("#{File.expand_path(dir)}/#{cookbook}")
             execute "cp -rf #{File.expand_path(dir)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
           end
         end
@@ -107,9 +107,9 @@ if context.chef_client_mode == 'zero'
         log "Could not find a '#{File.expand_path(dir)}' directory in your chef-repo."
       end
     end
-  elsif File.exists?(File.expand_path(context.cookbook_path))
+  elsif File.exist?(File.expand_path(context.cookbook_path))
     cookbooks.each do |cookbook|
-      if File.exists?("#{File.expand_path(context.cookbook_path)}/#{cookbook}")
+      if File.exist?("#{File.expand_path(context.cookbook_path)}/#{cookbook}")
         execute "cp -rf #{File.expand_path(context.cookbook_path)}/#{cookbook} #{temp_chef_repo}/cookbooks/"
       end
     end
@@ -156,7 +156,7 @@ if context.chef_client_mode == 'client'
 
   # Copy over encrypted_data_bag_key
   unless context.encrypted_data_bag_secret.nil?
-    if File.exists?(context.encrypted_data_bag_secret)
+    if File.exist?(context.encrypted_data_bag_secret)
       file File.join(temp_chef_repo, 'secure', 'encrypted_data_bag_secret') do
        content File.read(context.encrypted_data_bag_secret)
        mode '0600'

@@ -44,7 +44,7 @@ describe Chef::Knife::ContainerDockerRebuild do
     let(:argv) { %w[ docker/demo ] }
 
     it 'parses arguments, redownload and retags the docker image, then runs DockerBuild' do
-      expect(knife).to receive(:read_and_validate_params).and_call_original
+      expect(knife).to receive(:validate).and_call_original
       expect(knife).to receive(:setup_config_defaults).and_call_original
       expect(knife).to receive(:redownload_docker_image)
       expect(knife).to receive(:run_build_image)
