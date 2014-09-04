@@ -164,22 +164,3 @@ if context.chef_client_mode == 'client'
     end
   end
 end
-
-##
-# Create Ohai Plugin
-#
-
-# create Ohai folder
-# directory File.join(temp_chef_repo, "ohai")
-
-# docker hints directory
-# directory File.join(temp_chef_repo, "ohai", "hints")
-
-# docker plugins directory
-# directory File.join(temp_chef_repo, "ohai_plugins")
-
-# docker_container Ohai plugin
-# cookbook_file File.join(temp_chef_repo, "ohai_plugins", "docker_container.rb") do
-#   source "plugins/docker_container.rb"
-#   mode "0755"
-# end
