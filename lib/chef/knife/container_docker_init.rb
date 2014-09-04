@@ -110,9 +110,8 @@ class Chef
       # Run the plugin
       #
       def run
-        read_and_validate_params
         set_config_defaults
-        eval_current_system
+        validate
         setup_context
         chef_runner.converge
         download_and_tag_base_image
@@ -120,9 +119,9 @@ class Chef
       end
 
       #
-      # Read and validate the parameters
+      # Validate parameters and existing system state
       #
-      def read_and_validate_params
+      def validate
         if @name_args.length < 1
           show_usage
           ui.fatal("You must specify a Dockerfile name")
