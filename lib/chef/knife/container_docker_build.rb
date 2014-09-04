@@ -15,16 +15,12 @@
 # limitations under the License.
 #
 
-require 'chef/knife'
-require 'knife-container/helpers'
-require 'chef/mixin/shell_out'
-require 'mkmf'
+require 'chef/knife/container_docker_base'
 
 class Chef
   class Knife
     class ContainerDockerBuild < Knife
-      include Chef::Mixin::ShellOut
-      include KnifeContainer::Helpers
+      include Knife::ContainerDockerBase
 
       deps do
         # These two are needed for cleanup
