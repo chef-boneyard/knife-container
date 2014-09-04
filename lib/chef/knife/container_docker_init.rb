@@ -246,21 +246,6 @@ class Chef
         shell_out("docker tag #{image_name} #{@name_args[0]}")
       end
 
-      #
-      # Run some evaluations on the system to make sure it is in the state we need.
-      #
-      def eval_current_system
-        # Check to see if the Docker context already exists.
-        if File.exist?(File.join(config[:dockerfiles_path], @name_args[0]))
-          if config[:force]
-            FileUtils.rm_rf(File.join(config[:dockerfiles_path], @name_args[0]))
-          else
-            show_usage
-            ui.fatal("The Docker Context you are trying to create already exists. Please use the --force flag if you would like to re-create this context.")
-            exit 1
-          end
-        end
-      end
     end
   end
 end
