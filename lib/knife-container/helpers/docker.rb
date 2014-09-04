@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 require 'docker'
+require 'json'
 
 module KnifeContainer
   module Helpers
@@ -52,19 +53,33 @@ module KnifeContainer
       def download_image(image_name)
         ui.info("Downloading #{image_name}")
         name, tag = image_name.split(':')
-        if tag.nil?
-          img = ::Docker::Image.create(:fromImage => name)
-        else
-          img = ::Docker::Image.create(:fromImage => name, :tag => tag)
+        begin
+          if tag.nil?
+            img = ::Docker::Image.create(:fromImage => name)
+          else
+            img = ::Docker::Image.create(:fromImage => name, :tag => tag)
+          end
+          img.id
+        rescue Excon::Errors::SocketError => e
+          ui.fatal(connection_error)
+          exit 1
         end
-        img.id
       end
 
       #
       # Build Docker Image
       #
-      def build_image
-
+      def build_image(dir)
+        ui.info("Building image based on Dockerfile in #{dir}")
+        begin
+          img = ::Docker::Image.build_from_dir(dir) do |output|
+            log = JSON.parse(output)
+            puts log['stream']
+          end
+        rescue Excon::Errors::SocketError => e
+          ui.fatal(connection_error)
+          exit 1
+        end
       end
 
 
@@ -72,17 +87,34 @@ module KnifeContainer
       # Delete the specified image
       #
       def delete_image(image_name)
-        ui.info("Deleting orphaned Docker image")
-        image = Docker::Image.get(image_name)
-        image.remove
+        ui.info("Deleting Docker image #{image_name}")
+        begin
+          image = ::Docker::Image.get(image_name)
+          image.remove
+        rescue Excon::Errors::SocketError => e
+          ui.fatal(connection_error)
+          exit 1
+        end
       end
 
       #
       # Tag the specified Docker Image
       #
       def tag_image(image_id, image_name, tag='latest')
-        image = Docker::Image.get(image_id)
-        image.tag(:repo => image_name, :tag => tag)
+        ui.info("Add tag #{image_name}:#{tag} to #{image_id}")
+        begin
+          image = ::Docker::Image.get(image_id)
+          image.tag(:repo => image_name, :tag => tag)
+        rescue Excon::Errors::SocketError => e
+          ui.fatal(connection_error)
+          exit 1
+        end
+      end
+
+      def connection_error
+        'Could not connect to Docker API. Please make sure your Docker daemon '\
+        'process is running. If you are using boot2docker, please ensure that '\
+        'your VM is up and started.'
       end
 
     end
