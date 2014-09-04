@@ -55,6 +55,12 @@ class Chef
         description:  'Force the Docker image build',
         boolean:      true
 
+      option :tags,
+        long:         '--tags TAG[,TAG]',
+        description:  'Comma separated list of tags you wish to apply to the image.',
+        default:      ['latest'],
+        proc:         proc { |o| o.split(/[\s,]+/) }
+
       option :dockerfiles_path,
         short:        '-d PATH',
         long:         '--dockerfiles-path PATH',
@@ -69,7 +75,7 @@ class Chef
         setup_config_defaults
         run_berks if config[:run_berks]
         backup_secure unless config[:secure_dir].nil?
-        build_image
+        build_docker_image
         restore_secure unless config[:secure_dir].nil?
         cleanup_artifacts if config[:cleanup]
       end
@@ -202,8 +208,15 @@ class Chef
       #
       # Builds the Docker image
       #
-      def build_image
-        run_command(docker_build_command)
+      def build_docker_image
+        image = build_image(docker_context)
+
+        # Apply the name and tags
+        # By default, it will apply the latest tag but this behavior can be
+        # overwritten by excluding the latest tag from the specified list.
+        config[:tags].each do |tag|
+          tag_image(image.id, @name_args[0], tag)
+        end
       end
 
       #
@@ -237,13 +250,6 @@ class Chef
           destroy_item(Chef::Node, node_name, 'node')
           destroy_item(Chef::ApiClient, node_name, 'client')
         end
-      end
-
-      #
-      # The command to use to build the Docker image
-      #
-      def docker_build_command
-        "docker build -t #{dockerfile_name} #{docker_context}"
       end
 
       #
