@@ -28,7 +28,7 @@ describe Chef::Knife::ContainerDockerInit do
   end
 
   let(:default_cookbook_path) do
-    File.expand_path("cookbooks", fixtures_path)
+    File.expand_path('cookbooks', fixtures_path)
   end
 
   let(:reset_chef_config) do
@@ -48,73 +48,78 @@ describe Chef::Knife::ContainerDockerInit do
     KnifeContainer::Generator.context
   end
 
-  before(:each) do
-    @knife = Chef::Knife::ContainerDockerInit.new(argv)
-    @knife.stub(:output).and_return(true)
-    @knife.stub(:download_and_tag_base_image)
-    @knife.ui.stub(:stdout).and_return(stdout_io)
-    @knife.chef_runner.stub(:stdout).and_return(stdout_io)
-    KnifeContainer::Generator.reset
+  subject(:knife) do
+    Chef::Knife::ContainerDockerInit.new(argv).tap do |c|
+      allow(c).to receive(:output).and_return(true)
+      allow(c).to receive(:download_and_tag_base_image)
+      allow(c.ui).to receive(:stdout).and_return(stdout_io)
+      allow(c.chef_runner).to receive(:stdout).and_return(stdout_io)
+    end
   end
 
+  let(:argv) { %w[ docker/demo ] }
+
   describe '#run' do
-    let(:argv) { %w[ docker/demo ] }
-    it "should run things" do
-      @knife.should_receive(:read_and_validate_params)
-      @knife.should_receive(:set_config_defaults)
-      @knife.should_receive(:setup_context)
-      @knife.chef_runner.should_receive(:converge)
-      @knife.should_receive(:eval_current_system)
-      @knife.should_receive(:download_and_tag_base_image)
-      @knife.run
+    it 'initializes a new docker context' do
+      expect(knife).to receive(:validate)
+      expect(knife).to receive(:set_config_defaults)
+      expect(knife).to receive(:setup_context)
+      expect(knife.chef_runner).to receive(:converge)
+      expect(knife).to receive(:download_and_tag_base_image)
+      knife.run
     end
   end
 
   #
   # Validating parameters
   #
-  describe 'when reading and validating parameters' do
-    let(:argv) { %W[] }
+  describe '#validate' do
+    context 'when no arguments are given' do
+      let(:argv) { %w[] }
 
-    it 'should should print usage and exit when given no arguments' do
-      @knife.should_receive(:show_usage)
-      @knife.ui.should_receive(:fatal)
-      lambda { @knife.run }.should raise_error(SystemExit)
+      it 'prints the show_usage message and exits' do
+        expect(knife).to receive(:show_usage)
+        expect(knife.ui).to receive(:fatal)
+        expect{ knife.validate }.to raise_error(SystemExit)
+      end
     end
 
-    context 'and using berkshelf functionality' do
+    context 'when -b flag has been specified' do
       let(:argv) {%W[ docker/demo -b ]}
 
       it 'loads berkshelf if available' do
-        @knife.read_and_validate_params
-        defined?(Berkshelf).should == "constant"
+        knife.read_and_validate_params
+        expect(defined?(Berkshelf)).to eql('constant')
+      end
+    end
+
+    context 'when an invalid dockerfile name is given' do
+      let(:argv) { %w[ http://reg.example.com/demo ] }
+
+      it 'throws an error' do
+        expect(knife).to receive(:valid_dockerfile_name?).and_return(false)
+        expect(knife.ui).to receive(:fatal)
+        expect{ knife.validate }.to raise_error(SystemExit)
       end
     end
   end
 
   #
-  # Setting up the generator context
+  # Setting up configuration values
   #
-  describe 'when setting up the generator context' do
-    before(:each) {
-      reset_chef_config
-      Chef::Config[:knife][:docker_image] = 'chef/ubuntu-14.04:latest'
-    }
+  describe '#set_config_defaults' do
+    before(:each) { reset_chef_config }
 
     context 'when no cli overrides have been specified' do
-      let(:argv) { %w[ docker/demo ] }
-
-      it 'should set values to Chef::Config default values' do
-        @knife.run
-        expect(generator_context.chef_server_url).to eq("http://localhost:4000")
-        expect(generator_context.cookbook_path).to eq(File.join(fixtures_path, 'cookbooks'))
-        expect(generator_context.chef_client_mode).to eq("client")
-        expect(generator_context.node_path).to eq(File.join(tempdir, 'nodes'))
-        expect(generator_context.role_path).to eq(File.join(tempdir, 'roles'))
-        expect(generator_context.environment_path).to eq(File.join(tempdir, 'environments'))
-        expect(generator_context.dockerfiles_path).to eq(File.join(tempdir, 'dockerfiles'))
-        expect(generator_context.run_list).to eq([])
-        expect(generator_context.base_image).to eq('chef/ubuntu-14.04:latest')
+      it 'sets values to Chef::Config default values' do
+        config = knife.set_config_defaults
+        expect(config[:chef_server_url]).to eq('http://localhost:4000')
+        expect(config[:cookbook_path]).to eq(File.join(fixtures_path, 'cookbooks'))
+        expect(config[:node_path]).to eq(File.join(tempdir, 'nodes'))
+        expect(config[:role_path]).to eq(File.join(tempdir, 'roles'))
+        expect(config[:environment_path]).to eq(File.join(tempdir, 'environments'))
+        expect(config[:dockerfiles_path]).to eq(File.join(tempdir, 'dockerfiles'))
+        expect(config[:run_list]).to eq([])
       end
 
       context 'when cookbook_path is an array' do
@@ -123,240 +128,100 @@ describe Chef::Knife::ContainerDockerInit do
         end
 
         it 'honors the array' do
-          @knife.run
-          expect(generator_context.cookbook_path).to eq(['/path/to/cookbooks', '/path/to/site-cookbooks'])
+          config = knife.set_config_defaults
+          expect(config[:cookbook_path]).to eq(['/path/to/cookbooks', '/path/to/site-cookbooks'])
         end
       end
     end
 
-    describe "when base image is specified" do
-      context "with a tag" do
+    context 'when base image is specified' do
+      context 'with a tag' do
         let(:argv) { %w[ docker/demo -f docker/demo:11.12.8 ] }
 
-        it "should respect that tag" do
-          @knife.run
-          expect(generator_context.base_image).to eql("docker/demo:11.12.8")
+        it 'respects that tag' do
+          config = knife.set_config_defaults
+          expect(config[:base_image]).to eql('docker/demo:11.12.8')
         end
       end
 
-      context "without a tag" do
+      context 'without a tag' do
         let(:argv) { %w[ docker/demo -f docker/demo ] }
 
-        it "should append the 'latest' tag on the name" do
-          @knife.run
-          expect(generator_context.base_image).to eql("docker/demo:latest")
+        it 'should append the \'latest\' tag on the name' do
+          config = knife.set_config_defaults
+          expect(config[:base_image]).to eql("docker/demo:latest")
         end
-      end
-    end
-
-    describe 'when passing a run list' do
-      let(:argv) { %W[
-        docker/demo
-        -r recipe[apt],recipe[nginx]
-      ]}
-
-      it 'should add the run_list value to the first_boot.json if passed' do
-        @knife.run
-        first_boot = { run_list: ["recipe[apt]", "recipe[nginx]"]}
-        expect(generator_context.first_boot).to include(JSON.pretty_generate(first_boot))
-      end
-    end
-
-    describe 'when local-mode is specified' do
-      let(:argv) { %w[ docker/demo -z ] }
-
-      it "sets generator_context.chef_client_mode to zero" do
-        @knife.run
-        expect(generator_context.chef_client_mode).to eq("zero")
       end
     end
   end
 
+  describe '#setup_context' do
+    it 'calls helper methods to calculate more complex values' do
+      expect(knife).to receive(:encoded_dockerfile_name).with('docker/demo')
+      expect(knife).to receive(:chef_client_mode)
+      expect(knife).to receive(:first_boot_content)
+      knife.setup_context
+    end
+  end
+
+  describe '#eval_current_system' do
+    let(:context_path) { File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo') }
+
+    context 'the context already exists' do
+      before do
+        reset_chef_config
+        knife.config[:dockerfiles_path] = File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
+        allow(File).to receive(:exist?).with(context_path).and_return(true)
+      end
+
+      it 'warns the user when the context they are trying to create already exists' do
+        expect(knife).to receive(:show_usage)
+        expect(knife.ui).to receive(:fatal)
+        expect { knife.eval_current_system }.to raise_error(SystemExit)
+      end
+
+      context 'but --force was specified' do
+        let(:argv) { %w[ docker/demo --force ] }
+        it 'will delete the existing folder and proceed as normal' do
+          expect(FileUtils).to receive(:rm_rf).with(context_path).and_return(true)
+          knife.eval_current_system
+        end
+      end
+    end
+  end
 
   #
   # The chef runner converge
   #
-  describe 'the converge phase' do
-    describe 'when the -b flag is specified' do
+  describe '#converge' do
+
+    context 'when -b is passed' do
       before(:each) { reset_chef_config }
-      let(:argv) { %w[ docker/demo -r recipe[nginx] -z -b ] }
+      let(:argv) { %W[
+        docker/demo
+        -r role[demo],recipe[demo::recipe],recipe[nginx]
+        -b
+      ]}
 
       subject(:berksfile) do
         File.read("#{tempdir}/dockerfiles/docker/demo/Berksfile")
       end
 
       it 'generates a Berksfile based on the run_list' do
-        @knife.run
-        berksfile.should include 'cookbook "nginx"'
-      end
-
-      context 'and the run_list includes fully-qualified recipe names' do
-        let(:argv) { %W[
-          docker/demo
-          -r role[demo],recipe[demo::recipe],recipe[nginx]
-          -z -b
-        ]}
-
-        it 'correctly configures Berksfile with just the cookbook name' do
-          @knife.run
-          berksfile.should include 'cookbook "demo"'
-          berksfile.should include 'cookbook "nginx"'
-        end
+        knife.run
+        expect(berksfile).to match(/cookbook "nginx"/)
+        expect(berksfile).to match(/cookbook "demo"/)
       end
     end
 
-    describe 'when creating the client config file' do
-      context 'for server-mode' do
-        before { reset_chef_config }
-        let(:argv) {%W[ docker/demo ]}
-
-        subject(:config_file) do
-          File.read("#{tempdir}/dockerfiles/docker/demo/chef/client.rb")
-        end
-
-        it 'should have some global settings' do
-          @knife.run
-          expect(config_file).to include "require 'chef-init'"
-          expect(config_file).to include "node_name", "ChefInit.node_name"
-          expect(config_file).to include "ssl_verify_mode", ":verify_peer"
-          expect(config_file).to include "chef_server_url", "http://localhost:4000"
-          expect(config_file).to include "validation_key", "/etc/chef/secure/validation.pem"
-          expect(config_file).to include "client_key", "/etc/chef/secure/client.pem"
-          expect(config_file).to include "trusted_certs_dir", "/etc/chef/secure/trusted_certs"
-          expect(config_file).to include "validation_client_name", "masterchef"
-          expect(config_file).to include "encrypted_data_bag_secret", "/etc/chef/secure/encrypted_data_bag_secret"
-        end
-      end
-
-      context 'for local-mode' do
-        before { reset_chef_config }
-        let(:argv) {%W[ docker/demo -z ]}
-
-        subject(:config_file) do
-          File.read("#{tempdir}/dockerfiles/docker/demo/chef/zero.rb")
-        end
-
-        it 'should include local-mode specific settings' do
-          @knife.run
-          expect(config_file).to include "require 'chef-init'"
-          expect(config_file).to include "node_name", "ChefInit.node_name"
-          expect(config_file).to include "ssl_verify_mode", ":verify_peer"
-          expect(config_file).to include "cookbook_path", "[\"/etc/chef/cookbooks\"]"
-          expect(config_file).to include "encrypted_data_bag_secret", "/etc/chef/secure/encrypted_data_bag_secret"
-        end
-      end
-
-      context 'when encrypted_data_bag_secret is not specified' do
-        before do
-          reset_chef_config
-          Chef::Config[:encrypted_data_bag_secret] = nil
-        end
-
-        let(:argv) {%W[ docker/demo ]}
-
-        subject(:config_file) do
-          File.read("#{tempdir}/dockerfiles/docker/demo/chef/client.rb")
-        end
-
-        it 'should not be present in config' do
-          @knife.run
-          expect(config_file).to_not include "encrypted_data_bag_secret"
-        end
-
-      end
-
-    end
-
-    describe 'when creating the Dockerfile' do
-      subject(:dockerfile) do
-        File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Dockerfile")
-      end
-
-      context 'by default' do
-        let(:argv) { %w[ docker/demo ] }
-
-        before do
-          reset_chef_config
-          @knife.run
-        end
-
-        it 'should set the base_image name in a comment in the Dockerfile' do
-          expect(dockerfile).to include '# BASE chef/ubuntu-12.04:latest'
-        end
-      end
-
-      context 'when include_credentials is specified' do
-        let(:argv) { %w[ docker/demo --include-credentials ] }
-
-        before do
-          reset_chef_config
-          @knife.run
-        end
-
-        it 'should not remove the secure directory' do
-          expect(dockerfile).to include 'RUN chef-init --bootstrap --no-remove-secure'
-        end
-      end
-    end
-
-    describe "when no valid cookbook path is specified" do
-      before(:each) do
-        reset_chef_config
-        Chef::Config[:cookbook_path] = '/tmp/nil/cookbooks'
-      end
-
-      let(:argv) { %W[
-        docker/demo
-        -r recipe[nginx]
-        -z
-        -b
-      ]}
-
-      it "should log an error and not copy cookbooks" do
-        @knife.run
-        expect(stdout).to include('log[Could not find a \'/tmp/nil/cookbooks\' directory in your chef-repo.] action write')
-      end
-    end
-
-    describe "when copying cookbooks to temporary chef-repo" do
-      context "and the chef config specifies multiple directories" do
-        before do
-          reset_chef_config
-          Chef::Config[:cookbook_path] = ["#{fixtures_path}/cookbooks", "#{fixtures_path}/site-cookbooks"]
-          @knife.run
-        end
-
-        let(:argv) { %W[
-          docker/demo
-          -r recipe[nginx],recipe[apt]
-          -z
-        ]}
-
-        it "should copy cookbooks from both directories" do
-          expect(stdout).to include("execute[cp -rf #{fixtures_path}/cookbooks/nginx #{tempdir}/dockerfiles/docker/demo/chef/cookbooks/] action run")
-          expect(stdout).to include("execute[cp -rf #{fixtures_path}/site-cookbooks/apt #{tempdir}/dockerfiles/docker/demo/chef/cookbooks/] action run")
-        end
-
-        it "only copies cookbooks that exist in the run_list" do
-          expect(stdout).not_to include("execute[cp -rf #{default_cookbook_path}/dummy #{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/chef/cookbooks/] action run")
-        end
-      end
-    end
-
-    describe 'when running in local-mode' do
-      before(:each) { reset_chef_config }
-
-      let(:argv) { %W[
-        docker/demo
-        -r recipe[nginx]
-        -z
-      ]}
+    context 'when -z is passed' do
+      before { reset_chef_config }
+      let(:argv) { %w[ docker/demo -z ] }
 
       let(:expected_container_file_relpaths) do
         %w[
           Dockerfile
           .dockerignore
-          .gitignore
           chef/first-boot.json
           chef/zero.rb
           chef/.node_name
@@ -365,102 +230,136 @@ describe Chef::Knife::ContainerDockerInit do
 
       let(:expected_files) do
         expected_container_file_relpaths.map do |relpath|
-          File.join(Chef::Config[:chef_repo_path], "dockerfiles", "docker/demo", relpath)
+          File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker/demo', relpath)
         end
       end
 
-      it "creates a folder to manage the Dockerfile and Chef files" do
-        @knife.run
+      it 'creates a folder to manage the Dockerfile and Chef files' do
+        knife.run
         generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
         expected_files.each do |expected_file|
           expect(generated_files).to include(expected_file)
         end
       end
-    end
 
-    describe 'when running in server-mode' do
-      before(:each) { reset_chef_config }
-
-      let(:argv) { %W[
-        docker/demo
-        -r recipe[nginx]
-      ]}
-
-      let(:expected_container_file_relpaths) do
-        %w[
-          Dockerfile
-          .dockerignore
-          .gitignore
-          chef/first-boot.json
-          chef/client.rb
-          chef/secure/validation.pem
-          chef/secure/trusted_certs/chef_example_com.crt
-          chef/.node_name
-        ]
+      it 'creates config with local-mode specific values' do
+        knife.run
+        config_file = File.read("#{tempdir}/dockerfiles/docker/demo/chef/zero.rb")
+        expect(config_file).to include "require 'chef-init'"
+        expect(config_file).to include 'node_name', 'ChefInit.node_name'
+        expect(config_file).to include 'ssl_verify_mode', ':verify_peer'
+        expect(config_file).to include 'cookbook_path', '["/etc/chef/cookbooks"]'
+        expect(config_file).to include 'encrypted_data_bag_secret', '/etc/chef/secure/encrypted_data_bag_secret'
       end
 
-      let(:expected_files) do
-        expected_container_file_relpaths.map do |relpath|
-          File.join(Chef::Config[:chef_repo_path], "dockerfiles", "docker/demo", relpath)
+      describe 'copies cookbooks to temporary chef-repo' do
+        let(:argv) { %W[docker/demo -r recipe[nginx],recipe[apt] -z ]}
+        before do
+          reset_chef_config
+          Chef::Config[:cookbook_path] = ["#{fixtures_path}/cookbooks", "#{fixtures_path}/site-cookbooks"]
+          knife.run
+        end
+
+        it 'copies cookbooks from both directories' do
+          expect(stdout).to include("execute[cp -rf #{fixtures_path}/cookbooks/nginx #{tempdir}/dockerfiles/docker/demo/chef/cookbooks/] action run")
+          expect(stdout).to include("execute[cp -rf #{fixtures_path}/site-cookbooks/apt #{tempdir}/dockerfiles/docker/demo/chef/cookbooks/] action run")
+        end
+
+        it 'only copies cookbooks that exist in the run_list' do
+          expect(stdout).not_to include("execute[cp -rf #{default_cookbook_path}/dummy #{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/chef/cookbooks/] action run")
         end
       end
 
-      it "creates a folder to manage the Dockerfile and Chef files" do
-        @knife.run
-        generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
-        expected_files.each do |expected_file|
-          expect(generated_files).to include(expected_file)
+      describe 'when invalid cookbook path is specified' do
+        let(:argv) { %W[ docker/demo -r recipe[nginx] -z]}
+
+        before(:each) do
+          reset_chef_config
+          Chef::Config[:cookbook_path] = '/tmp/nil/cookbooks'
+        end
+
+        it 'logs an error and does not copy cookbooks' do
+          knife.run
+          expect(stdout).to include('log[Could not find a \'/tmp/nil/cookbooks\' directory in your chef-repo.] action write')
         end
       end
     end
-  end
 
-  describe "#download_and_tag_base_image" do
-    before(:each) do
-      reset_chef_config
-      @knife.unstub(:download_and_tag_base_image)
+    describe 'chef/client.rb' do
+      before { reset_chef_config }
+      subject(:config_file) do
+        File.read("#{tempdir}/dockerfiles/docker/demo/chef/client.rb")
+      end
+
+      it 'creates config with server specific configuration' do
+        knife.run
+        expect(config_file).to match(/require 'chef-init'/)
+        expect(config_file).to include 'node_name', 'ChefInit.node_name'
+        expect(config_file).to include 'ssl_verify_mode', ':verify_peer'
+        expect(config_file).to include 'chef_server_url', 'http://localhost:4000'
+        expect(config_file).to include 'validation_key', '/etc/chef/secure/validation.pem'
+        expect(config_file).to include 'client_key', '/etc/chef/secure/client.pem'
+        expect(config_file).to include 'trusted_certs_dir', '/etc/chef/secure/trusted_certs'
+        expect(config_file).to include 'validation_client_name', 'masterchef'
+        expect(config_file).to include 'encrypted_data_bag_secret', '/etc/chef/secure/encrypted_data_bag_secret'
+      end
+
+      context 'when encrypted_data_bag_secret is not specified' do
+        before do
+          reset_chef_config
+          Chef::Config[:encrypted_data_bag_secret] = nil
+        end
+
+        it 'is not present in config' do
+          knife.run
+          expect(config_file).to_not include 'encrypted_data_bag_secret'
+        end
+      end
     end
 
-    let(:argv) { %w[ docker/demo ] }
+    describe 'Dockerfile' do
+      let(:argv) { %w[ docker/demo --include-credentials ] }
+      subject(:dockerfile) do
+        File.read("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/Dockerfile")
+      end
 
-    it "should run docker pull on the specified base image and tag it with the dockerfile name" do
-      @knife.ui.should_receive(:info).exactly(3).times
-      @knife.should_receive(:shell_out).with("docker pull chef/ubuntu-12.04:latest")
-      @knife.should_receive(:shell_out).with("docker tag chef/ubuntu-12.04 docker/demo")
-      @knife.run
-    end
-  end
-
-  describe '#eval_current_system' do
-    let(:argv) { %w[ docker/demo ] }
-
-    context 'the context already exists' do
       before do
         reset_chef_config
-        File.stub(:exist?).with(File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo')).and_return(true)
+        knife.run
       end
 
-      it 'should warn the user if the context they are trying to create already exists' do
-        @knife.should_receive(:show_usage)
-        @knife.ui.should_receive(:fatal)
-        lambda { @knife.run }.should raise_error(SystemExit)
+      it 'sets the base_image name in a comment in the Dockerfile' do
+        expect(dockerfile).to include '# BASE chef/ubuntu-12.04:latest'
+      end
+
+      it 'does not remove the secure directory' do
+        expect(dockerfile).to include 'RUN chef-init --bootstrap --no-remove-secure'
       end
     end
 
-    context 'the context already exists but the force flag was specified' do
-      let(:argv) { %w[ docker/demo --force ] }
+    let(:expected_container_file_relpaths) do
+      %w[
+        Dockerfile
+        .dockerignore
+        chef/first-boot.json
+        chef/client.rb
+        chef/secure/validation.pem
+        chef/secure/trusted_certs/chef_example_com.crt
+        chef/.node_name
+      ]
+    end
 
-      before do
-        reset_chef_config
-        File.stub(:exist?).with(File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo')).and_return(true)
-        @knife.config[:dockerfiles_path] = File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
+    let(:expected_files) do
+      expected_container_file_relpaths.map do |relpath|
+        File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker/demo', relpath)
       end
+    end
 
-      it 'should delete that folder and proceed as normal' do
-        FileUtils.should_receive(:rm_rf).with(File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo'))
-        @knife.read_and_validate_params
-        @knife.set_config_defaults
-        @knife.eval_current_system
+    it 'creates a folder to manage the Dockerfile and Chef files' do
+      knife.run
+      generated_files = Dir.glob("#{Chef::Config[:chef_repo_path]}/dockerfiles/docker/demo/**{,/*/**}/*", File::FNM_DOTMATCH)
+      expected_files.each do |expected_file|
+        expect(generated_files).to include(expected_file)
       end
     end
   end
