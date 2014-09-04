@@ -61,7 +61,7 @@ class Chef
       # Run the plugin
       #
       def run
-        read_and_validate_params
+        validate
         setup_config_defaults
         redownload_docker_image
         run_build_image
@@ -71,7 +71,7 @@ class Chef
       # Reads the input parameters and validates them.
       # Will exit if it encounters an error
       #
-      def read_and_validate_params
+      def validate
         if @name_args.length < 1
           show_usage
           ui.fatal("You must specify a Dockerfile name")
