@@ -81,13 +81,13 @@ class Chef
       def validate
         if @name_args.length < 1
           show_usage
-          ui.fatal("You must specify a Dockerfile name")
+          ui.fatal('You must specify a Dockerfile name')
           exit 1
         end
 
         unless valid_dockerfile_name?(@name_args[0])
           show_usage
-          ui.fatal("Your Dockerfile name cannot include a protocol or a tag.")
+          ui.fatal('Your Dockerfile name cannot include a protocol or a tag.')
           exit 1
         end
 
@@ -108,7 +108,7 @@ class Chef
 
         # if berkshelf isn't installed, set run_berks to false
         unless berks_installed?
-          ui.warn("The berks executable could not be found. Resolving the Berksfile will be skipped.")
+          ui.warn('The berks executable could not be found. Resolving the Berksfile will be skipped.')
           config[:run_berks] = false
         end
 
@@ -124,7 +124,7 @@ class Chef
       # Set defaults for configuration values
       #
       def setup_config_defaults
-        Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
+        Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
 
         # Determine if we are running local or server mode
@@ -144,10 +144,10 @@ class Chef
       # Execute berkshelf locally
       #
       def run_berks
-        if File.exists?(File.join(docker_context, "Berksfile"))
-          if File.exists?(File.join(chef_repo, "zero.rb"))
+        if File.exists?(File.join(docker_context, 'Berksfile'))
+          if File.exists?(File.join(chef_repo, 'zero.rb'))
             run_berks_vendor
-          elsif File.exists?(File.join(chef_repo, "client.rb"))
+          elsif File.exists?(File.join(chef_repo, 'client.rb'))
             run_berks_upload
           end
         end
@@ -159,7 +159,7 @@ class Chef
       # @returns [TrueClass, FalseClass]
       #
       def berksfile_exists?
-        File.exists?(File.join(docker_context, "Berksfile"))
+        File.exists?(File.join(docker_context, 'Berksfile'))
       end
 
       #
@@ -175,19 +175,19 @@ class Chef
       # Installs all the cookbooks via Berkshelf
       #
       def run_berks_install
-        run_command("berks install")
+        run_command('berks install')
       end
 
       #
       # Vendors all the cookbooks into a directory inside the Docker Context
       #
       def run_berks_vendor
-        if File.exists?(File.join(chef_repo, "cookbooks"))
+        if File.exists?(File.join(chef_repo, 'cookbooks'))
           if config[:force_build]
-            FileUtils.rm_rf(File.join(chef_repo, "cookbooks"))
+            FileUtils.rm_rf(File.join(chef_repo, 'cookbooks'))
           else
             show_usage
-            ui.fatal("A `cookbooks` directory already exists. You must either remove this directory from your dockerfile directory or use the `force` flag")
+            ui.fatal('A `cookbooks` directory already exists. You must either remove this directory from your dockerfile directory or use the `force` flag')
             exit 1
           end
         end
@@ -201,8 +201,8 @@ class Chef
       #
       def run_berks_upload
         run_berks_install
-        berks_upload_cmd = "berks upload"
-        berks_upload_cmd << " --force" if config[:force_build]
+        berks_upload_cmd = 'berks upload'
+        berks_upload_cmd << ' --force' if config[:force_build]
         berks_upload_cmd << " --config=#{File.expand_path(config[:berks_config])}" if config[:berks_config]
         run_command(berks_upload_cmd)
       end
@@ -242,8 +242,8 @@ class Chef
       #
       def cleanup_artifacts
         unless config[:local_mode]
-          destroy_item(Chef::Node, node_name, "node")
-          destroy_item(Chef::ApiClient, node_name, "client")
+          destroy_item(Chef::Node, node_name, 'node')
+          destroy_item(Chef::ApiClient, node_name, 'client')
         end
       end
 
@@ -288,7 +288,7 @@ class Chef
       # @return [String]
       #
       def chef_repo
-        File.join(docker_context, "chef")
+        File.join(docker_context, 'chef')
       end
 
       #
@@ -297,7 +297,7 @@ class Chef
       # @return [String]
       #
       def node_name
-        File.read(File.join(chef_repo, ".node_name")).strip
+        File.read(File.join(chef_repo, '.node_name')).strip
       end
 
       # Extracted from Chef::Knife.delete_object, because it has a
