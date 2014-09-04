@@ -113,7 +113,7 @@ class Chef
         end
 
         if config[:berks_config]
-          unless File.exists?(config[:berks_config])
+          unless File.exist?(config[:berks_config])
             ui.fatal("No Berksfile configuration found at #{config[:berks_config]}")
             exit 1
           end
@@ -129,9 +129,9 @@ class Chef
 
         # Determine if we are running local or server mode
         case
-        when File.exists?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'zero.rb'))
+        when File.exist?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'zero.rb'))
           config[:local_mode] = true
-        when File.exists?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'client.rb'))
+        when File.exist?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'client.rb'))
           config[:local_mode] = false
         else
           show_usage
@@ -144,10 +144,10 @@ class Chef
       # Execute berkshelf locally
       #
       def run_berks
-        if File.exists?(File.join(docker_context, 'Berksfile'))
-          if File.exists?(File.join(chef_repo, 'zero.rb'))
+        if File.exist?(File.join(docker_context, 'Berksfile'))
+          if File.exist?(File.join(chef_repo, 'zero.rb'))
             run_berks_vendor
-          elsif File.exists?(File.join(chef_repo, 'client.rb'))
+          elsif File.exist?(File.join(chef_repo, 'client.rb'))
             run_berks_upload
           end
         end
@@ -159,7 +159,7 @@ class Chef
       # @returns [TrueClass, FalseClass]
       #
       def berksfile_exists?
-        File.exists?(File.join(docker_context, 'Berksfile'))
+        File.exist?(File.join(docker_context, 'Berksfile'))
       end
 
 
@@ -174,7 +174,7 @@ class Chef
       # Vendors all the cookbooks into a directory inside the Docker Context
       #
       def run_berks_vendor
-        if File.exists?(File.join(chef_repo, 'cookbooks'))
+        if File.exist?(File.join(chef_repo, 'cookbooks'))
           if config[:force_build]
             FileUtils.rm_rf(File.join(chef_repo, 'cookbooks'))
           else
