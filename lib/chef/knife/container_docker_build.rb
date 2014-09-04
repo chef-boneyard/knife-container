@@ -162,14 +162,6 @@ class Chef
         File.exists?(File.join(docker_context, 'Berksfile'))
       end
 
-      #
-      # Determines whether Berkshelf is installed
-      #
-      # @returns [TrueClass, FalseClass]
-      #
-      def berks_installed?
-        find_executable('berks').nil? ? false : true
-      end
 
       #
       # Installs all the cookbooks via Berkshelf

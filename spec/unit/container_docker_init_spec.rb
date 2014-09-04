@@ -87,9 +87,10 @@ describe Chef::Knife::ContainerDockerInit do
     context 'when -b flag has been specified' do
       let(:argv) {%W[ docker/demo -b ]}
 
-      it 'loads berkshelf if available' do
-        knife.read_and_validate_params
-        expect(defined?(Berkshelf)).to eql('constant')
+      it 'fails if berkshelf is not installed' do
+        expect(knife).to receive(:berks_installed?).and_return(false)
+        expect(knife.ui).to receive(:fatal)
+        expect{ knife.validate }.to raise_error(SystemExit)
       end
     end
 
