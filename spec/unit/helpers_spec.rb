@@ -38,10 +38,10 @@ describe KnifeContainer::Helpers do
       names.each do |name, value|
         expect(klass.valid_dockerfile_name?(name)).to eq(value)
       end
-    end    
+    end
   end
 
-  describe '.encoded_dockerfile_name' do
+  describe '.parse_dockerfile_name' do
     let(:input_values) { %w[
       reg.example.com:1234/image_name-test
       reg.example.com/image_name-test
@@ -65,7 +65,7 @@ describe KnifeContainer::Helpers do
       num = input_values.length
 
       while i < num do
-        expect(klass.encoded_dockerfile_name(input_values[i])).to eql(output_values[i])
+        expect(klass.parse_dockerfile_name(input_values[i])).to eql(output_values[i])
         i += 1
       end
     end

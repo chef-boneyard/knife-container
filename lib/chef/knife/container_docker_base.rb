@@ -17,17 +17,13 @@
 
 require 'chef/knife'
 require 'knife-container/command'
-require 'knife-container/helpers/berkshelf'
-require 'knife-container/helpers/docker'
+require 'knife-container/helpers'
 
 class Chef
   class Knife
     module ContainerDockerBase
       include KnifeContainer::Command
-      include KnifeContainer::Helpers::Berkshelf
-      include KnifeContainer::Helpers::Docker
-
-      
+      include KnifeContainer::Helpers
     end
   end
 end

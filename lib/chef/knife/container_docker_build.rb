@@ -129,13 +129,13 @@ class Chef
 
         # Determine if we are running local or server mode
         case
-        when File.exist?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'zero.rb'))
+        when File.exist?(File.join(config[:dockerfiles_path], dockerfile_name, 'chef', 'zero.rb'))
           config[:local_mode] = true
-        when File.exist?(File.join(config[:dockerfiles_path], @name_args[0], 'chef', 'client.rb'))
+        when File.exist?(File.join(config[:dockerfiles_path], dockerfile_name, 'chef', 'client.rb'))
           config[:local_mode] = false
         else
           show_usage
-          ui.fatal("Can not find a Chef configuration file in #{config[:dockerfiles_path]}/#{@name_args[0]}/chef")
+          ui.fatal("Can not find a Chef configuration file in #{config[:dockerfiles_path]}/#{dockerfile_name}/chef")
           exit 1
         end
       end
@@ -271,7 +271,7 @@ class Chef
       # Returns the encoded Dockerfile name
       #
       def dockerfile_name
-        encoded_dockerfile_name(@name_args[0])
+        parse_dockerfile_name(@name_args[0])
       end
 
       #

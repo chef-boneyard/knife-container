@@ -129,7 +129,14 @@ class Chef
       # @return [String]
       #
       def docker_context
-        File.join(config[:dockerfiles_path], @name_args[0])
+        File.join(config[:dockerfiles_path], dockerfile_name)
+      end
+
+      #
+      # @return [String] the encoded name of the dockerfile
+      #
+      def dockerfile_name
+        parse_dockerfile_name(@name_args[0])
       end
 
       #
