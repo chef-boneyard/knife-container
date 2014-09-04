@@ -13,6 +13,8 @@ default value is `https://supermarket.getchef.com`.
 image with those credentials still present. Stripping out those intermediate
 layers is now the responsibility of `chef-init --bootstrap`. Reported by Andrew
 Hsu.
+* Docker commands are now done directly via Docker API instead of shelling out
+to Docker CLI.
 
 ## v0.2.1 (2014-08-15)
 * [GH23] Specify hostname during knife container build
