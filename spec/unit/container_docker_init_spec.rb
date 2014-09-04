@@ -165,32 +165,6 @@ describe Chef::Knife::ContainerDockerInit do
     end
   end
 
-  describe '#eval_current_system' do
-    let(:context_path) { File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo') }
-
-    context 'the context already exists' do
-      before do
-        reset_chef_config
-        knife.config[:dockerfiles_path] = File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
-        allow(File).to receive(:exist?).with(context_path).and_return(true)
-      end
-
-      it 'warns the user when the context they are trying to create already exists' do
-        expect(knife).to receive(:show_usage)
-        expect(knife.ui).to receive(:fatal)
-        expect { knife.eval_current_system }.to raise_error(SystemExit)
-      end
-
-      context 'but --force was specified' do
-        let(:argv) { %w[ docker/demo --force ] }
-        it 'will delete the existing folder and proceed as normal' do
-          expect(FileUtils).to receive(:rm_rf).with(context_path).and_return(true)
-          knife.eval_current_system
-        end
-      end
-    end
-  end
-
   #
   # The chef runner converge
   #
