@@ -22,8 +22,7 @@ class Chef
     class ContainerDockerInit < Knife
       include Knife::ContainerDockerBase
 
-
-      banner "knife container docker init REPO/NAME [options]"
+      banner 'knife container docker init REPOSITORY/IMAGE_NAME [options]'
 
       option :base_image,
         short:        '-f [REPOSITORY/]IMAGE[:TAG]',
@@ -124,13 +123,13 @@ class Chef
       def validate
         if @name_args.length < 1
           show_usage
-          ui.fatal("You must specify a Dockerfile name")
+          ui.fatal('You must specify a Dockerfile name')
           exit 1
         end
 
         unless valid_dockerfile_name?(@name_args[0])
           show_usage
-          ui.fatal("Your Dockerfile name cannot include a protocol or a tag.")
+          ui.fatal('Your Dockerfile name cannot include a protocol or a tag.')
           exit 1
         end
 
@@ -210,7 +209,7 @@ class Chef
       # @return [String]
       #
       def recipe
-        "docker_init"
+        'docker_init'
       end
 
       #
@@ -230,7 +229,7 @@ class Chef
       # @return [String]
       #
       def chef_client_mode
-        config[:local_mode] ? "zero" : "client"
+        config[:local_mode] ? 'zero' : 'client'
       end
 
       #

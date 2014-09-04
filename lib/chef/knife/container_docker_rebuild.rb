@@ -22,7 +22,7 @@ class Chef
     class ContainerDockerRebuild < Knife
       include Knife::ContainerDockerBase
 
-      banner "knife container docker rebuild REPO/NAME [options]"
+      banner 'knife container docker rebuild REPO/NAME [options]'
 
       option :run_berks,
         long:         '--[no-]berks',
@@ -74,7 +74,7 @@ class Chef
       def validate
         if @name_args.length < 1
           show_usage
-          ui.fatal("You must specify a Dockerfile name")
+          ui.fatal('You must specify a Dockerfile name')
           exit 1
         end
       end
@@ -172,7 +172,7 @@ class Chef
       # @return [String]
       #
       def chef_repo
-        File.join(docker_context, "chef")
+        File.join(docker_context, 'chef')
       end
     end
   end
