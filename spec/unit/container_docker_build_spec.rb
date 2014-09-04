@@ -44,7 +44,7 @@ describe Chef::Knife::ContainerDockerBuild do
   describe '#run' do
     before(:each) do
       allow(knife).to receive(:run_berks)
-      allow(knife).to receive(:build_image)
+      allow(knife).to receive(:build_docker_image)
       allow(knife).to receive(:cleanup_artifacts)
       allow(knife).to receive(:berks_installed?).and_return(true)
       Chef::Config.reset
@@ -59,7 +59,7 @@ describe Chef::Knife::ContainerDockerBuild do
         expect(knife).to receive(:validate).and_call_original
         expect(knife).to receive(:setup_config_defaults).and_call_original
         expect(knife).to receive(:run_berks)
-        expect(knife).to receive(:build_image)
+        expect(knife).to receive(:build_docker_image)
         expect(knife).to receive(:cleanup_artifacts)
         knife.run
       end
@@ -395,18 +395,6 @@ describe Chef::Knife::ContainerDockerBuild do
         expect(knife).to receive(:run_command).with('berks upload --force --config=/home/my_berkshelf/config.json')
         knife.run_berks_upload
       end
-    end
-  end
-
-  describe '#docker_build_command' do
-    let(:argv) { %W[ reg.example.com/demo ] }
-
-    before(:each) do
-     knife.config[:dockerfiles_path] = default_dockerfiles_path
-    end
-
-    it 'should return valid command' do
-      expect(knife.docker_build_command).to eql("docker build -t reg_example_com/demo #{default_dockerfiles_path}/reg_example_com/demo")
     end
   end
 
