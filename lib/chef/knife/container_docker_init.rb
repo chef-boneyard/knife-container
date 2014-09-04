@@ -134,11 +134,13 @@ class Chef
         end
 
         if config[:generate_berksfile]
-          begin
-            require 'berkshelf'
-          rescue LoadError
+          unless berks_installed?
             show_usage
-            ui.fatal("You must have the Berkshelf gem installed to use the Berksfile flag.")
+            ui.fatal('You must have berkshelf installed to use the Berksfile flag.')
+            exit 1
+          end
+        end
+
             exit 1
           end
         end
@@ -146,9 +148,6 @@ class Chef
 
       #
       # Set default configuration values
-      #   We do this here and not in the option syntax because the Chef::Config
-      #   is not available to us at that point. It also gives us a space to set
-      #   other defaults.
       #
       def set_config_defaults
         %w(
