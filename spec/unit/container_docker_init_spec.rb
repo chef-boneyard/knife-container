@@ -61,11 +61,10 @@ describe Chef::Knife::ContainerDockerInit do
 
   describe '#run' do
     it 'initializes a new docker context' do
-      expect(knife).to receive(:read_and_validate_params)
+      expect(knife).to receive(:validate)
       expect(knife).to receive(:set_config_defaults)
       expect(knife).to receive(:setup_context)
       expect(knife.chef_runner).to receive(:converge)
-      expect(knife).to receive(:eval_current_system)
       expect(knife).to receive(:download_and_tag_base_image)
       knife.run
     end
@@ -74,14 +73,14 @@ describe Chef::Knife::ContainerDockerInit do
   #
   # Validating parameters
   #
-  describe '#read_and_validate_params' do
+  describe '#validate' do
     context 'when no arguments are given' do
       let(:argv) { %w[] }
 
       it 'prints the show_usage message and exits' do
         expect(knife).to receive(:show_usage)
         expect(knife.ui).to receive(:fatal)
-        expect{ knife.read_and_validate_params }.to raise_error(SystemExit)
+        expect{ knife.validate }.to raise_error(SystemExit)
       end
     end
 
@@ -100,7 +99,7 @@ describe Chef::Knife::ContainerDockerInit do
       it 'throws an error' do
         expect(knife).to receive(:valid_dockerfile_name?).and_return(false)
         expect(knife.ui).to receive(:fatal)
-        expect{ knife.read_and_validate_params }.to raise_error(SystemExit)
+        expect{ knife.validate }.to raise_error(SystemExit)
       end
     end
   end
