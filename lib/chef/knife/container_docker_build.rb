@@ -28,7 +28,7 @@ class Chef
         require 'chef/api_client'
       end
 
-      banner "knife container docker build REPO/NAME [options]"
+      banner 'knife container docker build REPO/NAME [options]'
 
       option :run_berks,
         long:         '--[no-]berks',
@@ -65,7 +65,7 @@ class Chef
       # Run the plugin
       #
       def run
-        read_and_validate_params
+        validate
         setup_config_defaults
         run_berks if config[:run_berks]
         backup_secure unless config[:secure_dir].nil?
@@ -78,7 +78,7 @@ class Chef
       # Reads the input parameters and validates them.
       # Will exit if it encounters an error
       #
-      def read_and_validate_params
+      def validate
         if @name_args.length < 1
           show_usage
           ui.fatal("You must specify a Dockerfile name")
