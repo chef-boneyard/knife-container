@@ -66,7 +66,7 @@ module KnifeContainer
       return @ohai if @ohai
 
       @ohai = Ohai::System.new
-      @ohai.all_plugins(["platform", "platform_version"])
+      @ohai.all_plugins(['platform', 'platform_version'])
       @ohai
     end
 
@@ -80,4 +80,3 @@ module KnifeContainer
 
   end
 end
-

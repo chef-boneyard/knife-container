@@ -1,7 +1,7 @@
 context = KnifeContainer::Generator.context
 dockerfile_dir = File.join(context.dockerfiles_path, context.dockerfile_name)
-temp_chef_repo = File.join(dockerfile_dir, "chef")
-user_chef_repo = File.join(context.dockerfiles_path, "..")
+temp_chef_repo = File.join(dockerfile_dir, 'chef')
+user_chef_repo = File.join(context.dockerfiles_path, '..')
 
 ##
 # Initial Setup
@@ -13,22 +13,22 @@ directory dockerfile_dir do
 end
 
 # Dockerfile
-template File.join(dockerfile_dir, "Dockerfile") do
-  source "dockerfile.erb"
+template File.join(dockerfile_dir, 'Dockerfile') do
+  source 'dockerfile.erb'
   helpers(KnifeContainer::Generator::TemplateHelper)
 end
 
 # .dockerfile
-template File.join(dockerfile_dir, ".dockerignore") do
-  source "dockerignore.erb"
+template File.join(dockerfile_dir, '.dockerignore') do
+  source 'dockerignore.erb'
   helpers(KnifeContainer::Generator::TemplateHelper)
 end
 
 # .gitignore
-template File.join(dockerfile_dir, ".gitignore") do
-  source "gitignore.erb"
+template File.join(dockerfile_dir, '.gitignore') do
+  source 'gitignore.erb'
   helpers(KnifeContainer::Generator::TemplateHelper)
-end  
+end
 
 
 ##
@@ -42,18 +42,18 @@ end
 
 # Client Config
 template File.join(temp_chef_repo, "#{context.chef_client_mode}.rb") do
-  source "config.rb.erb"
+  source 'config.rb.erb'
   helpers(KnifeContainer::Generator::TemplateHelper)
 end
 
 # First Boot JSON
-file File.join(temp_chef_repo, "first-boot.json") do
+file File.join(temp_chef_repo, 'first-boot.json') do
   content context.first_boot
 end
 
 # Node Name
-template File.join(temp_chef_repo, ".node_name") do
-  source "node_name.erb"
+template File.join(temp_chef_repo, '.node_name') do
+  source 'node_name.erb'
   helpers(KnifeContainer::Generator::TemplateHelper)
 end
 
@@ -77,15 +77,15 @@ run_list_items.each do |item|
 end
 
 # Generate Berksfile from runlist
-template File.join(dockerfile_dir, "Berksfile") do
-  source "berksfile.erb"
+template File.join(dockerfile_dir, 'Berksfile') do
+  source 'berksfile.erb'
   variables :cookbooks => cookbooks
   helpers(KnifeContainer::Generator::TemplateHelper)
   only_if { context.generate_berksfile }
 end
 
 # Copy over the necessary directories into the temp chef-repo (if local-mode)
-if context.chef_client_mode == "zero"
+if context.chef_client_mode == 'zero'
 
   # generate a cookbooks directory unless we are building from a Berksfile
   unless context.generate_berksfile
@@ -138,26 +138,26 @@ end
 ##
 # Server Only Stuff
 #
-if context.chef_client_mode == "client"
+if context.chef_client_mode == 'client'
 
   directory File.join(temp_chef_repo, 'secure')
 
   # Add validation.pem
-  file File.join(temp_chef_repo, 'secure', "validation.pem") do
+  file File.join(temp_chef_repo, 'secure', 'validation.pem') do
     content File.read(context.validation_key)
     mode '0600'
   end
 
   # Copy over trusted certs
   unless Dir["#{context.trusted_certs_dir}/*"].empty?
-    directory File.join(temp_chef_repo, 'secure', "trusted_certs")
-    execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, 'secure', "trusted_certs/")}"
+    directory File.join(temp_chef_repo, 'secure', 'trusted_certs')
+    execute "cp -r #{context.trusted_certs_dir}/* #{File.join(temp_chef_repo, 'secure', 'trusted_certs/')}"
   end
 
   # Copy over encrypted_data_bag_key
   unless context.encrypted_data_bag_secret.nil?
     if File.exists?(context.encrypted_data_bag_secret)
-      file File.join(temp_chef_repo, 'secure', "encrypted_data_bag_secret") do
+      file File.join(temp_chef_repo, 'secure', 'encrypted_data_bag_secret') do
        content File.read(context.encrypted_data_bag_secret)
        mode '0600'
       end
