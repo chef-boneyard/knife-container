@@ -25,27 +25,37 @@ class Chef
       banner "knife container docker rebuild REPO/NAME [options]"
 
       option :run_berks,
-        :long => "--[no-]berks",
-        :description => "Run Berkshelf",
-        :default => true,
-        :boolean => true
+        long:         '--[no-]berks',
+        description:  'Run Berkshelf',
+        default:      true,
+        boolean:      true
+
+      option :berks_config,
+        long:         '--berks-config CONFIG',
+        description:  'Use the specified Berkshelf configuration'
 
       option :cleanup,
-        :long => "--[no-]cleanup",
-        :description => "Cleanup Chef and Docker artifacts",
-        :default => true,
-        :boolean => true
+        long:         '--[no-]cleanup',
+        description:  'Cleanup Chef and Docker artifacts',
+        default:      true,
+        boolean:      true
+
+      option :secure_dir,
+        long:         '--secure-dir DIR',
+        description:  'Path to a local repository that contains Chef credentials.'
 
       option :force_build,
-        :long => "--force",
-        :description => "Force the Docker image build",
-        :boolean => true
+        long:         '--force',
+        description:  'Force the Docker image build',
+        boolean:      true
 
       option :dockerfiles_path,
-        :short => "-d PATH",
-        :long => "--dockerfiles-path PATH",
-        :description => "Path to the directory where Docker contexts are kept",
-        :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
+        short:        '-d PATH',
+        long:         '--dockerfiles-path PATH',
+        description:  'Path to the directory where Docker contexts are kept',
+        proc:         proc { |d| Chef::Config[:knife][:dockerfiles_path] = d }
+
+
 
       #
       # Run the plugin

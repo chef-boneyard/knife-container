@@ -26,86 +26,86 @@ class Chef
       banner "knife container docker init REPO/NAME [options]"
 
       option :base_image,
-        :short => "-f [REPO/]IMAGE[:TAG]",
-        :long => "--from [REPO/]IMAGE[:TAG]",
-        :description => "The image to use for the FROM value in your Dockerfile",
-        :proc => Proc.new { |f| Chef::Config[:knife][:docker_image] = f }
+        short:        '-f [REPOSITORY/]IMAGE[:TAG]',
+        long:         '--from [REPOSITORY/]IMAGE[:TAG]',
+        description:  'The image to use as the base for your Docker image',
+        proc:         proc { |f| Chef::Config[:knife][:docker_image] = f }
 
       option :run_list,
-        :short => "-r RunlistItem,RunlistItem...,",
-        :long => "--run-list RUN_LIST",
-        :description => "Comma seperated list of roles/recipes to apply to your Docker image",
-        :proc => Proc.new { |o| o.split(/[\s,]+/) }
+        short:        '-r RunlistItem,RunlistItem...,',
+        long:         '--run-list RUN_LIST',
+        description:  'Comma seperated list of roles/recipes to apply to your Docker image',
+        proc:         proc { |o| o.split(/[\s,]+/) }
 
       option :local_mode,
-        :boolean => true,
-        :short => "-z",
-        :long => "--local-mode",
-        :description => "Include and use a local chef repository to build the Docker image"
+        boolean:      true,
+        short:        '-z',
+        long:         '--local-mode',
+        description:  'Include and use a local chef repository to build the Docker image'
 
       option :generate_berksfile,
-        :short => "-b",
-        :long => "--berksfile",
-        :description => "Generate a Berksfile based on the run_list provided",
-        :boolean => true,
-        :default => false
+        short:        '-b',
+        long:         '--berksfile',
+        description:  'Generate a Berksfile based on the run_list provided',
+        boolean:      true,
+        default:      false
 
       option :include_credentials,
-        :long => "--include-credentials",
-        :description => "Include secure credentials in your Docker image",
-        :boolean => true,
-        :default => false
+        long:         '--include-credentials',
+        description:  'Include secure credentials in your Docker image',
+        boolean:      true,
+        default:      false
 
       option :validation_key,
-        :long => "--validation-key PATH",
-        :description => "The path to the validation key used by the client, typically a file named validation.pem"
+        long:         '--validation-key PATH',
+        description:  'The path to the validation key used by the client, typically a file named validation.pem'
 
       option :validation_client_name,
-        :long => "--validation-client-name NAME",
-        :description => "The name of the validation client, typically a client named chef-validator"
+        long:         '--validation-client-name NAME',
+        description:  'The name of the validation client, typically a client named chef-validator'
 
       option :trusted_certs_dir,
-        :long => "--trusted-certs PATH",
-        :description => "The path to the directory containing trusted certs"
+        long:         '--trusted-certs PATH',
+        description:  'The path to the directory containing trusted certs'
 
       option :encrypted_data_bag_secret,
-        :long => "--secret-file SECRET_FILE",
-        :description => "A file containing the secret key to use to encrypt data bag item values"
+        long:         '--secret-file SECRET_FILE',
+        description:  'A file containing the secret key to use to encrypt data bag item values'
 
       option :chef_server_url,
-        :long => "--server-url URL",
-        :description => "Chef Server URL"
+        long:         '--server-url URL',
+        description:  'Chef Server URL'
 
       option :force,
-        :long => "--force",
-        :boolean => true,
-        :desription => "Will overwrite existing Docker Contexts"
+        long:         '--force',
+        boolean:      true,
+        description:  'Will overwrite existing Docker Contexts'
 
       option :cookbook_path,
-        :long => "--cookbook-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for cookbooks",
-        :proc => Proc.new { |o| o.split(':') }
+        long:         '--cookbook-path PATH[:PATH]',
+        description:  'A colon-seperated path to look for cookbooks',
+        proc:         proc { |o| o.split(':') }
 
       option :role_path,
-        :long => "--role-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for roles",
-        :proc => Proc.new { |o| o.split(':') }
+        long:         '--role-path PATH[:PATH]',
+        description:  'A colon-seperated path to look for roles',
+        proc:         proc { |o| o.split(':') }
 
       option :node_path,
-        :long => "--node-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for node objects",
-        :proc => Proc.new { |o| o.split(':') }
+        long:         '--node-path PATH[:PATH]',
+        description:  'A colon-seperated path to look for node objects',
+        proc:         proc { |o| o.split(':') }
 
       option :environment_path,
-        :long => "--environment-path PATH[:PATH]",
-        :description => "A colon-seperated path to look for environments",
-        :proc => Proc.new { |o| o.split(':') }
+        long:         '--environment-path PATH[:PATH]',
+        description:  'A colon-seperated path to look for environments',
+        proc:         proc { |o| o.split(':') }
 
       option :dockerfiles_path,
-        :short => "-d PATH",
-        :long => "--dockerfiles-path PATH",
-        :description => "Path to the directory where Docker contexts are kept",
-        :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
+        short:        '-d PATH',
+        long:         '--dockerfiles-path PATH',
+        description:  'Path to the directory where Docker contexts are kept',
+        proc:         proc { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
       #
       # Run the plugin
