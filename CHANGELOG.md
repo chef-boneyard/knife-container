@@ -13,6 +13,8 @@ default value is `https://supermarket.getchef.com`.
 image with those credentials still present. Stripping out those intermediate
 layers is now the responsibility of `chef-init --bootstrap`. Reported by Andrew
 Hsu.
+* Docker commands are now done directly via Docker API instead of shelling out
+to Docker CLI.
 
 ## v0.2.3 (2014-09-19)
 * [GH-39] Fixed `--dockerfiles-path` parameter which did not properly accept input.

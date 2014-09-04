@@ -252,11 +252,12 @@ class Chef
       #
       def download_and_tag_base_image
         ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
-        shell_out("docker pull #{config[:base_image]}")
+        image_id = download_image(config[:base_image])
         image_name = config[:base_image].split(':')[0]
         ui.info("Tagging base image #{image_name} as #{@name_args[0]}")
-        shell_out("docker tag #{image_name} #{@name_args[0]}")
+        tag_image(image_id, @name_args[0])
       end
+
 
     end
   end
