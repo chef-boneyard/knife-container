@@ -51,13 +51,11 @@ module KnifeContainer
       #
       def download_image(image_name)
         ui.info("Downloading #{image_name}")
-        image = image_name.split(':')
-        name = image[0]
-        tag = image[1]
+        name, tag = image_name.split(':')
         if tag.nil?
-          img = Docker::Image.create(:fromImage => name)
+          img = ::Docker::Image.create(:fromImage => name)
         else
-          img = Docker::Image.create(:fromImage => name, :tag => tag)
+          img = ::Docker::Image.create(:fromImage => name, :tag => tag)
         end
         img.id
       end
