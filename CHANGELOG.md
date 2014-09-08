@@ -15,6 +15,7 @@ layers is now the responsibility of `chef-init --bootstrap`. Reported by Andrew
 Hsu.
 * Docker commands are now done directly via Docker API instead of shelling out
 to Docker CLI.
+* [GH-27] Added `--data-bag-path` option. Copies over data bags.
 
 ## v0.2.3 (2014-09-19)
 * [GH-39] Fixed `--dockerfiles-path` parameter which did not properly accept input.
@@ -24,7 +25,7 @@ to Docker CLI.
 * [GH-34] Update gemspec to support Chef12.
 
 ## v0.2.1 (2014-08-15)
-* [GH23] Specify hostname during knife container build
+* [GH-23] Specify hostname during knife container build
 
 ## v0.2.0 (2014-07-16)
 * `knife container docker init` - Initialize a Docker context on your local workstation.
