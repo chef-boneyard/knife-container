@@ -29,6 +29,7 @@ module KnifeContainer
       attr_accessor :cookbook_path
       attr_accessor :role_path
       attr_accessor :node_path
+      attr_accessor :data_bag_path
       attr_accessor :environment_path
       attr_accessor :chef_server_url
       attr_accessor :validation_key

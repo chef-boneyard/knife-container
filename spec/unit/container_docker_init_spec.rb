@@ -143,6 +143,7 @@ describe Chef::Knife::ContainerDockerInit do
         expect(config[:node_path]).to eq(File.join(tempdir, 'nodes'))
         expect(config[:role_path]).to eq(File.join(tempdir, 'roles'))
         expect(config[:environment_path]).to eq(File.join(tempdir, 'environments'))
+        expect(config[:data_bag_path]).to eq(File.join(tempdir, 'data_bags'))
         expect(config[:dockerfiles_path]).to eq(File.join(tempdir, 'dockerfiles'))
         expect(config[:run_list]).to eq([])
       end

@@ -100,6 +100,11 @@ class Chef
         description:  'A colon-seperated path to look for environments',
         proc:         proc { |o| o.split(':') }
 
+      option :data_bag_path,
+        long:         '--data-bag-path PATH[:PATH]',
+        description:  'A colon-seperated path to look for data bags',
+        proc:         proc { |o| o.split(':') }
+
       option :dockerfiles_path,
         short:        '-d PATH',
         long:         '--dockerfiles-path PATH',
@@ -165,6 +170,7 @@ class Chef
           node_path
           role_path
           environment_path
+          data_bag_path
           validation_key
           validation_client_name
           trusted_certs_dir
@@ -202,6 +208,7 @@ class Chef
         generator_context.cookbook_path = config[:cookbook_path]
         generator_context.role_path = config[:role_path]
         generator_context.node_path = config[:node_path]
+        generator_context.data_bag_path = config[:data_bag_path]
         generator_context.environment_path = config[:environment_path]
         generator_context.chef_server_url = config[:chef_server_url]
         generator_context.validation_key = config[:validation_key]

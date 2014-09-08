@@ -119,7 +119,7 @@ if context.chef_client_mode == 'zero'
 
   # Because they have a smaller footprint, we will copy over all the roles, environments
   # and nodes. This behavior will likely change in a future version of knife-container.
-  %w(role environment node).each do |dir|
+  %w(role environment node data_bag).each do |dir|
     path = context.send(:"#{dir}_path")
     if path.kind_of?(Array)
       path.each do |p|
