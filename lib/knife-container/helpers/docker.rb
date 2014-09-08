@@ -53,17 +53,15 @@ module KnifeContainer
       def download_image(image_name)
         ui.info("Downloading #{image_name}")
         name, tag = image_name.split(':')
-        begin
-          if tag.nil?
-            img = ::Docker::Image.create(:fromImage => name)
-          else
-            img = ::Docker::Image.create(:fromImage => name, :tag => tag)
-          end
-          img.id
-        rescue Excon::Errors::SocketError => e
-          ui.fatal(connection_error)
-          exit 1
+        if tag.nil?
+          img = ::Docker::Image.create(:fromImage => name)
+        else
+          img = ::Docker::Image.create(:fromImage => name, :tag => tag)
         end
+        img.id
+      rescue Excon::Errors::SocketError => e
+        ui.fatal(connection_error)
+        exit 1
       end
 
       #
@@ -71,15 +69,13 @@ module KnifeContainer
       #
       def build_image(dir)
         ui.info("Building image based on Dockerfile in #{dir}")
-        begin
-          img = ::Docker::Image.build_from_dir(dir) do |output|
-            log = JSON.parse(output)
-            puts log['stream']
-          end
-        rescue Excon::Errors::SocketError => e
-          ui.fatal(connection_error)
-          exit 1
+        img = ::Docker::Image.build_from_dir(dir) do |output|
+          log = JSON.parse(output)
+          puts log['stream']
         end
+      rescue Excon::Errors::SocketError => e
+        ui.fatal(connection_error)
+        exit 1
       end
 
 
@@ -88,13 +84,11 @@ module KnifeContainer
       #
       def delete_image(image_name)
         ui.info("Deleting Docker image #{image_name}")
-        begin
-          image = ::Docker::Image.get(image_name)
-          image.remove
-        rescue Excon::Errors::SocketError => e
-          ui.fatal(connection_error)
-          exit 1
-        end
+        image = ::Docker::Image.get(image_name)
+        image.remove
+      rescue Excon::Errors::SocketError => e
+        ui.fatal(connection_error)
+        exit 1
       end
 
       #
@@ -102,13 +96,11 @@ module KnifeContainer
       #
       def tag_image(image_id, image_name, tag='latest')
         ui.info("Add tag #{image_name}:#{tag} to #{image_id}")
-        begin
-          image = ::Docker::Image.get(image_id)
-          image.tag(:repo => image_name, :tag => tag)
-        rescue Excon::Errors::SocketError => e
-          ui.fatal(connection_error)
-          exit 1
-        end
+        image = ::Docker::Image.get(image_id)
+        image.tag(:repo => image_name, :tag => tag)
+      rescue Excon::Errors::SocketError => e
+        ui.fatal(connection_error)
+        exit 1
       end
 
       def connection_error
