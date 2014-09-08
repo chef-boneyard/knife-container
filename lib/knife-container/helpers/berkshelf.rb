@@ -26,7 +26,7 @@ module KnifeContainer
       # @returns [TrueClass, FalseClass]
       #
       def berks_installed?
-        find_executable('berks').nil? ? false : true
+        ! MakeMakefile.find_executable('berks').nil?
       end
 
     end
