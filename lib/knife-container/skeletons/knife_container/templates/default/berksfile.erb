@@ -1,4 +1,4 @@
-source "https://supermarket.getchef.com"
+source "<%= @berksfile_source %>"
 
 <% @cookbooks.each do |cookbook| -%>
 cookbook "<%= cookbook %>"

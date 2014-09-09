@@ -1,9 +1,10 @@
 # BASE <%= base_image %>
 FROM <%= dockerfile_name %>
 ADD chef/ /etc/chef/
+<% if include_credentials -%>
+RUN chef-init --bootstrap --no-remove-secure
+<% else -%>
 RUN chef-init --bootstrap
-<% unless include_credentials -%>
-RUN rm -rf /etc/chef/secure/*
 <% end -%>
 ENTRYPOINT ["chef-init"]
 CMD ["--onboot"]

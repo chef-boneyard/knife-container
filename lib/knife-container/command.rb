@@ -31,7 +31,7 @@ module KnifeContainer
     # For now, this is hard coded to the 'skeletons' directory in this
     # repo.
     def docker_cookbook_path
-      File.expand_path("../skeletons", __FILE__)
+      File.expand_path('../skeletons', __FILE__)
     end
 
     # Delegates to `Generator.context`, the singleton instance of
@@ -42,4 +42,3 @@ module KnifeContainer
 
   end
 end
-
