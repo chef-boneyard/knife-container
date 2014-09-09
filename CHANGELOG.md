@@ -1,6 +1,6 @@
 # Knife Container Changelog
 
-## v1.0.0 (unreleased)
+## v0.3.0 (unreleased)
 * Added 'docker container rebuild' subcommand
 * Added `Chef::Config[:knife][:docker_image]` configuration value to allow for the
 specification of what the default Docker Image should be. The default value is
