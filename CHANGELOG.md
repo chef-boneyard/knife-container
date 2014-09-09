@@ -1,5 +1,8 @@
 # Knife Container Changelog
 
+## v0.2.2 (2014-09-08)
+* [GH-34] Update gemspec to support Chef12.
+
 ## v0.2.1 (2014-08-15)
 * [GH23] Specify hostname during knife container build
 
