@@ -16,12 +16,6 @@
 #
 
 require 'test_helpers'
-require 'simplecov'
-require 'json'
-
-SimpleCov.start do
-  add_filter '/spec/'
-end
 
 RSpec.configure do |c|
   c.include TestHelpers

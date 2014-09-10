@@ -16,6 +16,7 @@ Hsu.
 * Docker commands are now done directly via Docker API instead of shelling out
 to Docker CLI.
 * [GH-27] Added `--data-bag-path` option. Copies over data bags.
+* [FSE-201] Update knife-container to support ChefDK and Chef 12 libraries
 
 ## v0.2.2 (2014-09-08)
 * [GH-34] Update gemspec to support Chef12.
