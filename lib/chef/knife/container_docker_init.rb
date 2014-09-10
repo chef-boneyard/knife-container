@@ -242,7 +242,7 @@ class Chef
       def first_boot_content
         first_boot = {}
         first_boot['run_list'] = config[:run_list]
-        JSON.pretty_generate(first_boot)
+        Chef::JSONCompat.to_json_pretty(first_boot)
       end
 
       #

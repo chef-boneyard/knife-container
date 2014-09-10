@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 require 'docker'
-require 'json'
+require 'chef/json_compat'
 
 module KnifeContainer
   module Helpers
@@ -70,7 +70,7 @@ module KnifeContainer
       def build_image(dir)
         ui.info("Building image based on Dockerfile in #{dir}")
         img = ::Docker::Image.build_from_dir(dir) do |output|
-          log = JSON.parse(output)
+          log = Chef::JSONCompat.new.parse(output)
           puts log['stream']
         end
       rescue Excon::Errors::SocketError => e

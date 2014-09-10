@@ -18,6 +18,7 @@
 require 'chef/knife'
 require 'knife-container/command'
 require 'knife-container/helpers'
+require 'chef/json_compat'
 
 class Chef
   class Knife
