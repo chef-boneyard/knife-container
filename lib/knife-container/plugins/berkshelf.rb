@@ -14,18 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-require 'chef/knife'
-require 'chef/json_compat'
-require 'knife-container/command'
-require 'knife-container/plugins'
+require 'knife-container/plugins/berkshelf/berksfile'
 require 'knife-container/exceptions'
+require 'mkmf'
 
-class Chef
-  class Knife
-    module ContainerDockerBase
-      include KnifeContainer::Command
-      include KnifeContainer::Exceptions
+module KnifeContainer
+  module Plugins
+    class Berkshelf
+
+      def self.validate!
+        case
+        when !installed?
+          raise KnifeContainer::Exceptions::ValidationError, 'You must have Berkshelf installed to use the Berkshelf flag.'
+        end
+      end
+
+      # Determines whether Berkshelf is installed
+      #
+      # @returns [TrueClass, FalseClass]
+      def self.installed?
+        ! ::MakeMakefile.find_executable('berks').nil?
+      end
+
+
     end
   end
 end

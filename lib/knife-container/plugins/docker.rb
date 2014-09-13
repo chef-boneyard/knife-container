@@ -14,21 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-require 'mkmf'
+
+require 'knife-container/exceptions'
+require 'knife-container/plugins/docker/image'
+require 'knife-container/plugins/docker/context'
 
 module KnifeContainer
-  module Helpers
-    module Berkshelf
+  module Plugins
+    class Docker
 
-      #
-      # Determines whether Berkshelf is installed
-      #
-      # @returns [TrueClass, FalseClass]
-      #
-      def berks_installed?
-        ! ::MakeMakefile.find_executable('berks').nil?
+      def self.validate!
+        # Check to make sure we can communicate with the Docker API
+        begin
+          ::Docker.version
+        rescue Excon::Errors::SocketError => e
+          raise KnifeContainer::Exceptions::ValidationError, 'Could not connect to Docker API. Please make sure your Docker daemon '\
+          'process is running. If you are using boot2docker, please ensure that '\
+          'your VM is up and started.'
+        end
       end
-
     end
   end
 end

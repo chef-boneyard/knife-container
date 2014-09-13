@@ -15,17 +15,8 @@
 # limitations under the License.
 #
 
-require 'chef/knife'
-require 'chef/json_compat'
-require 'knife-container/command'
-require 'knife-container/plugins'
-require 'knife-container/exceptions'
-
-class Chef
-  class Knife
-    module ContainerDockerBase
-      include KnifeContainer::Command
-      include KnifeContainer::Exceptions
-    end
+module KnifeContainer
+  module Exceptions
+    class ValidationError < RuntimeError; end
   end
 end
