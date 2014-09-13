@@ -51,15 +51,20 @@ describe Chef::Knife::ContainerDockerInit do
   subject(:knife) do
     Chef::Knife::ContainerDockerInit.new(argv).tap do |c|
       allow(c).to receive(:output).and_return(true)
-      allow(c).to receive(:download_and_tag_base_image)
       allow(c.ui).to receive(:stdout).and_return(stdout_io)
       allow(c.chef_runner).to receive(:stdout).and_return(stdout_io)
+      c.parse_options(argv)
+      c.merge_configs
     end
   end
 
   let(:argv) { %w[ docker/demo ] }
 
   describe '#run' do
+    before do
+      allow(knife).to receive(:docker_context_path).and_return("#{Chef::Config[:dockerfiles_path]}/docker/demo")
+    end
+
     it 'initializes a new docker context' do
       expect(knife).to receive(:validate)
       expect(knife).to receive(:set_config_defaults)
@@ -67,65 +72,6 @@ describe Chef::Knife::ContainerDockerInit do
       expect(knife.chef_runner).to receive(:converge)
       expect(knife).to receive(:download_and_tag_base_image)
       knife.run
-    end
-  end
-
-  #
-  # Validating parameters
-  #
-  describe '#validate' do
-    context 'when no arguments are given' do
-      let(:argv) { %w[] }
-
-      it 'prints the show_usage message and exits' do
-        expect(knife).to receive(:show_usage)
-        expect(knife.ui).to receive(:fatal)
-        expect{ knife.validate }.to raise_error(SystemExit)
-      end
-    end
-
-    context 'when -b flag has been specified' do
-      let(:argv) {%W[ docker/demo -b ]}
-
-      it 'fails if berkshelf is not installed' do
-        expect(knife).to receive(:berks_installed?).and_return(false)
-        expect(knife.ui).to receive(:fatal)
-        expect{ knife.validate }.to raise_error(SystemExit)
-      end
-    end
-
-    context 'when an invalid dockerfile name is given' do
-      let(:argv) { %w[ http://reg.example.com/demo ] }
-
-      it 'throws an error' do
-        expect(knife).to receive(:valid_dockerfile_name?).and_return(false)
-        expect(knife.ui).to receive(:fatal)
-        expect{ knife.validate }.to raise_error(SystemExit)
-      end
-    end
-
-    let(:context_path) { File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo') }
-
-    context 'the context already exists' do
-      before do
-        reset_chef_config
-        knife.config[:dockerfiles_path] = File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
-        allow(File).to receive(:exist?).with(context_path).and_return(true)
-      end
-
-      it 'warns the user when the context they are trying to create already exists' do
-        expect(knife).to receive(:show_usage)
-        expect(knife.ui).to receive(:fatal)
-        expect { knife.validate }.to raise_error(SystemExit)
-      end
-
-      context 'but --force was specified' do
-        let(:argv) { %w[ docker/demo --force ] }
-        it 'will delete the existing folder and proceed as normal' do
-          expect(FileUtils).to receive(:rm_rf).with(context_path).and_return(true)
-          knife.validate
-        end
-      end
     end
   end
 
@@ -181,9 +127,42 @@ describe Chef::Knife::ContainerDockerInit do
     end
   end
 
+  #
+  # Validating parameters
+  #
+  describe '#validate' do
+    let(:context_path) { File.join(Chef::Config[:chef_repo_path], 'dockerfiles', 'docker', 'demo') }
+    let(:argv) { %w(docker/demo ) }
+
+    it 'validates Docker and checks for an existing docker context' do
+      expect(knife).to receive(:setup_and_verify_docker)
+      expect(knife).to receive(:verify_docker_context)
+      knife.validate
+    end
+
+    context 'when no arguments are given' do
+      let(:argv) { %w[] }
+
+      it 'raise validation Error' do
+        expect{ knife.validate }.to raise_error(KnifeContainer::Exceptions::ValidationError)
+      end
+    end
+
+    context 'when -b flag has been specified' do
+      let(:argv) { %w( docker/demo --generate-berksfile ) }
+
+      it 'sets up and validates Berkshelf' do
+        expect(knife).to receive(:setup_and_verify_docker)
+        expect(knife).to receive(:setup_and_verify_berkshelf)
+        expect(knife).to receive(:verify_docker_context)
+        knife.validate
+      end
+    end
+  end
+
   describe '#setup_context' do
     it 'calls helper methods to calculate more complex values' do
-      expect(knife).to receive(:dockerfile_name)
+      expect(knife).to receive(:docker_context_name)
       expect(knife).to receive(:chef_client_mode)
       expect(knife).to receive(:first_boot_content)
       knife.setup_context
@@ -194,6 +173,9 @@ describe Chef::Knife::ContainerDockerInit do
   # The chef runner converge
   #
   describe '#converge' do
+    before do
+      allow(knife).to receive(:download_and_tag_base_image)
+    end
 
     context 'when -b is passed' do
       before(:each) { reset_chef_config }

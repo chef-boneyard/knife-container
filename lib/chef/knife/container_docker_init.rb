@@ -22,6 +22,8 @@ class Chef
     class ContainerDockerInit < Knife
       include Knife::ContainerDockerBase
 
+      attr_reader :docker_context
+
       banner 'knife container docker init REPOSITORY/IMAGE_NAME [options]'
 
       option :base_image,
@@ -110,58 +112,27 @@ class Chef
         long:         '--dockerfiles-path PATH',
         description:  'Path to the directory where Docker contexts are kept'
 
-      #
-      # Run the plugin
-      #
+      # Execute the plugin
       def run
         set_config_defaults
-        validate
+
+        begin
+          validate
+        rescue ValidationError => e
+          show_usage
+          ui.fatal(e.message)
+          exit false
+        end
+
         setup_context
         chef_runner.converge
         download_and_tag_base_image
-        ui.info("\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{dockerfile_name}", :magenta)}")
+        ui.info("\n#{ui.color("Context Created: #{docker_context_path}", :magenta)}")
       end
 
-      #
-      # Validate parameters and existing system state
-      #
-      def validate
-        if @name_args.length < 1
-          show_usage
-          ui.fatal('You must specify a Dockerfile name')
-          exit 1
-        end
-
-        unless valid_dockerfile_name?(@name_args[0])
-          show_usage
-          ui.fatal('Your Dockerfile name cannot include a protocol or a tag.')
-          exit 1
-        end
-
-        if config[:generate_berksfile]
-          unless berks_installed?
-            show_usage
-            ui.fatal('You must have berkshelf installed to use the Berksfile flag.')
-            exit 1
-          end
-        end
-
-        # Check to see if the Docker context already exists.
-        if File.exist?(File.join(config[:dockerfiles_path], dockerfile_name))
-          if config[:force]
-            FileUtils.rm_rf(File.join(config[:dockerfiles_path], dockerfile_name))
-          else
-            show_usage
-            ui.fatal('The Docker Context you are trying to create already exists. ' \
-              'Please use the --force flag if you would like to re-create this context.')
-            exit 1
-          end
-        end
-      end
-
-      #
       # Set default configuration values
       #
+      # @return [Hash] the config object that contains all the configuration values.
       def set_config_defaults
         %w(
           chef_server_url
@@ -194,11 +165,40 @@ class Chef
         config
       end
 
-      #
+      # Validate parameters and existing system state
+      def validate
+        raise ValidationError, 'You must specify a Dockerfile name' if @name_args.length < 1
+        setup_and_verify_docker
+        setup_and_verify_berkshelf if config[:generate_berksfile]
+        verify_docker_context
+      end
+
+      # Run the Docker validation and create the Docker Context object
+      def setup_and_verify_docker
+        KnifeContainer::Plugins::Docker.validate!
+        @docker_context = KnifeContainer::Plugins::Docker::Context.new(@name_args[0], config[:dockerfiles_path])
+      end
+
+      # Run the Berkshelf validation
+      def setup_and_verify_berkshelf
+        KnifeContainer::Plugins::Berkshelf.validate!
+      end
+
+      # Check to see if the Docker context already exists.
+      def verify_docker_context
+        if File.exist?(@docker_context.path)
+          if config[:force]
+            FileUtils.rm_rf(@docker_context.path)
+          else
+            raise ValidationError, 'The Docker Context you are trying to create already exists. ' \
+              'Please use the --force flag if you would like to re-create this context.'
+          end
+        end
+      end
+
       # Setup the generator context
-      #
       def setup_context
-        generator_context.dockerfile_name = dockerfile_name
+        generator_context.dockerfile_name = docker_context_name
         generator_context.dockerfiles_path = config[:dockerfiles_path]
         generator_context.base_image = config[:base_image]
         generator_context.chef_client_mode = chef_client_mode
@@ -219,53 +219,43 @@ class Chef
         generator_context.include_credentials = config[:include_credentials]
       end
 
-      #
-      # The name of the recipe to use
-      #
-      # @return [String]
-      #
+      # The name of the recipe to use for the Chef Generator
       def recipe
         'docker_init'
       end
 
-      #
-      # @return [String] the encoded name of the dockerfile
-      def dockerfile_name
-        parse_dockerfile_name(@name_args[0])
-      end
-
-      #
-      # Generate the JSON object for our first-boot.json
-      #
-      # @return [String]
-      #
+      # Generate and return the JSON object for our first-boot.json
       def first_boot_content
         first_boot = {}
         first_boot['run_list'] = config[:run_list]
         Chef::JSONCompat.to_json_pretty(first_boot)
       end
 
-      #
       # Return the mode in which to run: zero or client
-      #
-      # @return [String]
-      #
       def chef_client_mode
         config[:local_mode] ? 'zero' : 'client'
       end
 
-      #
-      # Download the base Docker image and tag it with the image name
-      #
-      def download_and_tag_base_image
-        ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
-        image_id = download_image(config[:base_image])
-        image_name = config[:base_image].split(':')[0]
-        ui.info("Tagging base image #{image_name} as #{@name_args[0]}")
-        tag_image(image_id, @name_args[0])
+      # Return the path to the Docker Context
+      def docker_context_path
+        @docker_context.path
       end
 
+      # Return the parsed name of the Docker Context with the special
+      # characters removed.
+      def docker_context_name
+        @docker_context.parsed_name
+      end
 
+      # Download the base Docker image and tag it with the image name
+      def download_and_tag_base_image
+        ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
+        name, tag = KnifeContainer::Plugins::Docker.parse_name(config[:base_image])
+        image = KnifeContainer::Plugins::Docker::Image.new(name: name, tag: tag)
+        image.download
+        ui.info("Tagging base image #{name} as #{@docker_context.name}")
+        image.tag('latest')
+      end
     end
   end
 end

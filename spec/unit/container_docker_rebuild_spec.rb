@@ -34,7 +34,7 @@ describe Chef::Knife::ContainerDockerRebuild do
 
   subject(:knife) do
     Chef::Knife::ContainerDockerRebuild.new(argv).tap do |c|
-      c.stub(:output).and_return(true)
+      allow(c).to receive(:output).and_return(true)
       c.parse_options(argv)
       c.merge_configs
     end
@@ -44,62 +44,22 @@ describe Chef::Knife::ContainerDockerRebuild do
     let(:argv) { %w[ docker/demo ] }
 
     it 'parses arguments, redownload and retags the docker image, then runs DockerBuild' do
-      expect(knife).to receive(:validate).and_call_original
-      expect(knife).to receive(:setup_config_defaults).and_call_original
-      expect(knife).to receive(:redownload_docker_image)
+      expect(knife).to receive(:validate)
+      expect(knife).to receive(:setup_config_defaults)
+      expect(knife).to receive(:rebase_docker_image)
       expect(knife).to receive(:run_build_image)
       knife.run
     end
   end
 
-  describe '#redownload_docker_image' do
+  describe '#rebase_docker_image' do
     let(:argv) { %w[ docker/demo ] }
+    let(:image) { double('Docker Image', rebase: nil) }
 
-    before do
-      allow(knife).to receive(:parse_dockerfile_for_base).and_return('chef/ubuntu-12.04:latest')
-      allow(knife).to receive(:download_image).and_return('0123456789ABCDEF')
-    end
-
-    it 'parses the Dockerfile for BASE and pulls down that image' do
-      expect(knife).to receive(:parse_dockerfile_for_base).and_return('chef/ubuntu-12.04:latest')
-      expect(knife).to receive(:delete_image).with('docker/demo')
-      expect(knife).to receive(:download_image).with('chef/ubuntu-12.04:latest').and_return('0123456789ABCDEF')
-      expect(knife).to receive(:tag_image).with('0123456789ABCDEF', 'docker/demo')
-      knife.redownload_docker_image
-    end
-  end
-
-  describe '#parse_dockerfile_for_base' do
-    let(:argv) { %w[ docker/demo ] }
-    let(:valid_file_contents) { StringIO.new("# BASE chef/ubuntu-14.04:latest\nFROM docker/demo") }
-    let(:invalid_file_contents) { StringIO.new("FROM docker/demo") }
-
-    before { allow(File).to receive(:open).and_return(valid_file_contents) }
-
-    it 'returns the BASE value from the file' do
-      expect(knife.parse_dockerfile_for_base).to eql('chef/ubuntu-14.04:latest')
-    end
-
-    context 'when BASE is missing' do
-      before do
-        Chef::Config[:knife][:docker_image] = 'chef/centos-6:latest'
-        allow(File).to receive(:open).and_return(invalid_file_contents)
-      end
-
-      it 'returns the default Chef::Config value' do
-        expect(knife.parse_dockerfile_for_base).to eql('chef/centos-6:latest')
-      end
-
-      context 'and Chef::Config value is missing' do
-        before do
-          Chef::Config[:knife][:docker_image] = nil
-          allow(File).to receive(:open).and_return(invalid_file_contents)
-        end
-
-        it 'returns chef/ubuntu-12.04' do
-          expect(knife.parse_dockerfile_for_base).to eql('chef/ubuntu-12.04:latest')
-        end
-      end
+    it 'creates a Docker Image object based on a context and rebases it' do
+      expect(KnifeContainer::Plugins::Docker::Image).to receive(:new).and_return(image)
+      expect(image).to receive(:rebase)
+      knife.rebase_docker_image
     end
   end
 

@@ -22,6 +22,9 @@ class Chef
     class ContainerDockerBuild < Knife
       include Knife::ContainerDockerBase
 
+      attr_reader :docker_context
+      attr_reader :berksfile
+
       deps do
         # These two are needed for cleanup
         require 'chef/node'
@@ -67,233 +70,140 @@ class Chef
         description:  'Path to the directory where Docker contexts are kept',
         proc:         proc { |d| Chef::Config[:knife][:dockerfiles_path] = d }
 
-      #
-      # Run the plugin
-      #
+
+      # Execute the plugin
       def run
-        validate
         setup_config_defaults
+
+        begin
+          validate
+        rescue ValidationError => e
+          show_usage
+          ui.fatal(e.message)
+          exit false
+        end
+
         run_berks if config[:run_berks]
         backup_secure unless config[:secure_dir].nil?
         build_docker_image
         restore_secure unless config[:secure_dir].nil?
-        cleanup_artifacts if config[:cleanup]
+        cleanup_artifacts if config[:cleanup] && !config[:local_mode]
       end
 
-      #
-      # Reads the input parameters and validates them.
-      # Will exit if it encounters an error
-      #
-      def validate
-        if @name_args.length < 1
-          show_usage
-          ui.fatal('You must specify a Dockerfile name')
-          exit 1
-        end
-
-        unless valid_dockerfile_name?(@name_args[0])
-          show_usage
-          ui.fatal('Your Dockerfile name cannot include a protocol or a tag.')
-          exit 1
-        end
-
-        # if secure_dir doesn't exist or is missing files, exit
-        if config[:secure_dir]
-          case
-          when !File.directory?(config[:secure_dir])
-            ui.fatal("SECURE_DIRECTORY: The directory #{config[:secure_dir]}" \
-              " does not exist.")
-            exit 1
-          when !File.exist?(File.join(config[:secure_dir], 'validation.pem')) &&
-            !File.exist?(File.join(config[:secure_dir], 'client.pem'))
-            ui.fatal("SECURE_DIRECTORY: Can not find validation.pem or client.pem" \
-              " in #{config[:secure_dir]}.")
-            exit 1
-          end
-        end
-
-        # if berkshelf isn't installed, set run_berks to false
-        unless berks_installed?
-          ui.warn('The berks executable could not be found. Resolving the Berksfile will be skipped.')
-          config[:run_berks] = false
-        end
-
-        if config[:berks_config]
-          unless File.exist?(config[:berks_config])
-            ui.fatal("No Berksfile configuration found at #{config[:berks_config]}")
-            exit 1
-          end
-        end
-      end
-
-      #
-      # Set defaults for configuration values
-      #
+      # Set defaults for configuration values.
       def setup_config_defaults
         Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
         config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
+      end
 
-        # Determine if we are running local or server mode
+      # Reads the input parameters and validates them.
+      # Will exit if it encounters an error
+      def validate
+        raise ValidationError, 'You must specify a Dockerfile name' if @name_args.length < 1
+        setup_and_verify_docker
+        setup_and_verify_berkshelf if config[:run_berks]
+        verify_config_file
+        verify_secure_directory unless config[:secure_dir].nil?
+      end
+
+      # Validate the Docker installation and create the Docker Context object
+      def setup_and_verify_docker
+        KnifeContainer::Plugins::Docker.validate!
+        @docker_context = KnifeContainer::Plugins::Docker::Context.new(@name_args[0], config[:dockerfiles_path])
+      end
+
+      # Validate the Berkshelf installation and create the Berksfile object
+      def setup_and_verify_berkshelf
+        KnifeContainer::Plugins::Berkshelf.validate!
+        @berksfile = KnifeContainer::Plugins::Berkshelf::Berksfile.new("#{@docker_context.path}/Berksfile", config[:berks_config])
+        @berksfile.force = config[:force]
+      end
+
+      # Determine if we are running local or server mode
+      def verify_config_file
         case
-        when File.exist?(File.join(config[:dockerfiles_path], dockerfile_name, 'chef', 'zero.rb'))
+        when File.exist?(File.join(chef_repo, 'zero.rb'))
           config[:local_mode] = true
-        when File.exist?(File.join(config[:dockerfiles_path], dockerfile_name, 'chef', 'client.rb'))
+        when File.exist?(File.join(chef_repo, 'client.rb'))
           config[:local_mode] = false
         else
-          show_usage
-          ui.fatal("Can not find a Chef configuration file in #{config[:dockerfiles_path]}/#{dockerfile_name}/chef")
-          exit 1
+          raise ValidationError, "Can not find a Chef configuration file in #{chef_repo}"
         end
       end
 
+      # if secure_dir doesn't exist or is missing files, exit
+      def verify_secure_directory
+        case
+        when !File.directory?(config[:secure_dir])
+          raise ValidationError, "SECURE_DIRECTORY: The directory #{config[:secure_dir]}" \
+            ' does not exist.'
+        when !File.exist?(File.join(config[:secure_dir], 'validation.pem')) &&
+          !File.exist?(File.join(config[:secure_dir], 'client.pem'))
+          raise ValidationError, 'SECURE_DIRECTORY: Can not find validation.pem or client.pem' \
+            " in #{config[:secure_dir]}."
+        end
+      end
+
+      # Execute Berkshelf on the local machine.
       #
-      # Execute berkshelf locally
+      # When running in local mode, Berkshelf will run a berks install and then
+      # vendor cookbooks into the cookbooks directory.
       #
+      # When running in server mode, Berkshelf will run a berks install and then
+      # upload the cookbooks to the configuration specified in the config.
       def run_berks
-        if File.exist?(File.join(docker_context, 'Berksfile'))
-          if File.exist?(File.join(chef_repo, 'zero.rb'))
-            run_berks_vendor
-          elsif File.exist?(File.join(chef_repo, 'client.rb'))
-            run_berks_upload
-          end
+        case
+        when File.exist?(File.join(chef_repo, 'zero.rb'))
+          KnifeContainer::Plugins::Berkshelf.vendor(@berksfile, "#{chef_repo}/cookbooks")
+        when File.exist?(File.join(chef_repo, 'client.rb'))
+          KnifeContainer::Plugins::Berkshelf.upload(@berksfile)
         end
       end
 
-      #
-      # Determines whether a Berksfile exists in the Docker context
-      #
-      # @returns [TrueClass, FalseClass]
-      #
-      def berksfile_exists?
-        File.exist?(File.join(docker_context, 'Berksfile'))
-      end
-
-
-      #
-      # Installs all the cookbooks via Berkshelf
-      #
-      def run_berks_install
-        run_command('berks install')
-      end
-
-      #
-      # Vendors all the cookbooks into a directory inside the Docker Context
-      #
-      def run_berks_vendor
-        if File.exist?(File.join(chef_repo, 'cookbooks'))
-          if config[:force_build]
-            FileUtils.rm_rf(File.join(chef_repo, 'cookbooks'))
-          else
-            show_usage
-            ui.fatal('A `cookbooks` directory already exists. You must either remove this directory from your dockerfile directory or use the `force` flag')
-            exit 1
-          end
-        end
-
-        run_berks_install
-        run_command("berks vendor #{chef_repo}/cookbooks")
-      end
-
-      #
-      # Upload the cookbooks to the Chef Server
-      #
-      def run_berks_upload
-        run_berks_install
-        berks_upload_cmd = 'berks upload'
-        berks_upload_cmd << ' --force' if config[:force_build]
-        berks_upload_cmd << " --config=#{File.expand_path(config[:berks_config])}" if config[:berks_config]
-        run_command(berks_upload_cmd)
-      end
-
-      #
       # Builds the Docker image
-      #
       def build_docker_image
-        image = build_image(docker_context)
+        image = KnifeContainer::Plugins::Docker::Image.new(context: @docker_context)
+        id = image.build
 
-        # Apply the name and tags
-        # By default, it will apply the latest tag but this behavior can be
-        # overwritten by excluding the latest tag from the specified list.
         config[:tags].each do |tag|
-          tag_image(image.id, @name_args[0], tag)
+          image.tag(tag)
         end
       end
 
-      #
       # Move `secure` folder to `backup_secure` and copy the config[:secure_dir]
       # to the new `secure` folder.
       #
       # Note: The .dockerignore file has a line to ignore backup secure to it
       #       should not be included in the image.
-      #
       def backup_secure
-        FileUtils.mv("#{docker_context}/chef/secure",
-          "#{docker_context}/chef/secure_backup")
-        FileUtils.cp_r(config[:secure_dir], "#{docker_context}/chef/secure")
+        FileUtils.mv("#{chef_repo}/secure","#{chef_repo}/secure_backup")
+        FileUtils.cp_r(config[:secure_dir], "#{chef_repo}/secure")
       end
 
-      #
       # Delete the temporary secure directory and restore the original from the
       # backup.
-      #
       def restore_secure
-        FileUtils.rm_rf("#{docker_context}/chef/secure")
-        FileUtils.mv("#{docker_context}/chef/secure_backup",
-          "#{docker_context}/chef/secure")
+        FileUtils.rm_rf("#{chef_repo}/secure")
+        FileUtils.mv("#{chef_repo}secure_backup", "#{chef_repo}/secure")
       end
 
-      #
-      # Cleanup build artifacts
-      #
+      # Deletes the node object and the Chef API client from the Chef Server
       def cleanup_artifacts
-        unless config[:local_mode]
-          destroy_item(Chef::Node, node_name, 'node')
-          destroy_item(Chef::ApiClient, node_name, 'client')
-        end
+        destroy_item(Chef::Node, node_name, 'node')
+        destroy_item(Chef::ApiClient, node_name, 'client')
       end
 
-      #
-      # Run a shell command from the Docker Context directory
-      #
-      def run_command(cmd)
-        Open3.popen2e(cmd, chdir: docker_context) do |stdin, stdout_err, wait_thr|
-          while line = stdout_err.gets
-            puts line
-          end
-          wait_thr.value.to_i
-        end
-      end
-
-      #
-      # Returns the path to the Docker Context
-      #
-      # @return [String]
-      #
-      def docker_context
-        File.join(config[:dockerfiles_path], dockerfile_name)
-      end
-
-      #
-      # Returns the encoded Dockerfile name
-      #
-      def dockerfile_name
-        parse_dockerfile_name(@name_args[0])
-      end
-
-      #
       # Returns the path to the chef-repo inside the Docker Context
       #
       # @return [String]
-      #
       def chef_repo
-        File.join(docker_context, 'chef')
+        File.join(@docker_context.path, 'chef')
       end
 
-      #
-      # Generates a node name for the Docker container
+      # Reads the node name for the Docker container from the .node_name
+      # file that is generated by Docker::Init.
       #
       # @return [String]
-      #
       def node_name
         File.read(File.join(chef_repo, '.node_name')).strip
       end
