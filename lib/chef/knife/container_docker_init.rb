@@ -46,7 +46,7 @@ class Chef
 
       option :generate_berksfile,
         short:        '-b',
-        long:         '--berksfile',
+        long:         '--generate-berksfile',
         description:  'Generate a Berksfile based on the run_list provided',
         boolean:      true,
         default:      false
