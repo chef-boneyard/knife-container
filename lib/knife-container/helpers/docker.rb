@@ -70,7 +70,7 @@ module KnifeContainer
       def build_image(dir)
         ui.info("Building image based on Dockerfile in #{dir}")
         img = ::Docker::Image.build_from_dir(dir) do |output|
-          log = Chef::JSONCompat.new.parse(output)
+          log = Chef::JSONCompat.from_json(output)
           puts log['stream']
         end
       rescue Excon::Errors::SocketError => e
