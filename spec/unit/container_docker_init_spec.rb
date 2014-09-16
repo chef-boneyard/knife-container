@@ -173,8 +173,13 @@ describe Chef::Knife::ContainerDockerInit do
   # The chef runner converge
   #
   describe '#converge' do
+
     before do
       allow(knife).to receive(:download_and_tag_base_image)
+      allow(knife).to receive(:setup_and_verify_docker) # dont validate docker
+      allow(knife).to receive(:verify_docker_context) # dont validate docker
+      allow(knife).to receive(:docker_context_name).and_return('docker/demo')
+      allow(knife).to receive(:docker_context_path).and_return("#{tempdir}/dockerfiles/docker/demo")
     end
 
     context 'when -b is passed' do
