@@ -35,7 +35,7 @@ module TestHelpers
   end
 
   def fixtures_path
-    File.expand_path(File.dirname(__FILE__) + "/unit/fixtures/")
+    File.expand_path(File.dirname(__FILE__) + '/fixtures/')
   end
 
   def project_root
@@ -53,7 +53,7 @@ module TestHelpers
   end
 
   def tempdir
-    @tmpdir ||= Dir.mktmpdir("knife-container")
+    @tmpdir ||= Dir.mktmpdir('knife-container')
     File.realpath(@tmpdir)
   end
 end
