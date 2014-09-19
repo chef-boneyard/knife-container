@@ -108,8 +108,7 @@ class Chef
       option :dockerfiles_path,
         :short => "-d PATH",
         :long => "--dockerfiles-path PATH",
-        :description => "Path to the directory where Docker contexts are kept",
-        :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
+        :description => "Path to the directory where Docker contexts are kept"
 
       #
       # Run the plugin
@@ -175,8 +174,7 @@ class Chef
 
         config[:run_list] ||= []
 
-        Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
-        config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
+        config[:dockerfiles_path] ||= Chef::Config[:knife][:dockerfiles_path] || File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
       end
 
       #
