@@ -71,13 +71,11 @@ run_list_items.each do |item|
 end
 
 # Generate Berksfile from runlist
-unless context.run_list.empty?
-  template File.join(dockerfile_dir, "Berksfile") do
-    source "berksfile.erb"
-    variables :cookbooks => cookbooks
-    helpers(KnifeContainer::Generator::TemplateHelper)
-    only_if { context.generate_berksfile }
-  end
+template File.join(dockerfile_dir, 'Berksfile') do
+  source 'berksfile.erb'
+  variables :cookbooks => cookbooks.uniq
+  helpers(KnifeContainer::Generator::TemplateHelper)
+  only_if { context.generate_berksfile }
 end
 
 # Copy over the necessary directories into the temp chef-repo (if local-mode)
