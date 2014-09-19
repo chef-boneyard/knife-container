@@ -1,5 +1,8 @@
 # Knife Container Changelog
 
+## v0.2.4 (2014-09-19)
+* Fast followup fix to v0.2.3 - fix `--dockerfiles-path` parameter for build.
+
 ## v0.2.3 (2014-09-19)
 * [GH-39] Fixed `--dockerfiles-path` parameter which did not properly accept input.
 * [GH-38] Fixed issue where cookbooks would appear more than once in the Berksfile.

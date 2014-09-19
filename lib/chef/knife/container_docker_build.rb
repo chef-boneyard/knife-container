@@ -55,8 +55,7 @@ class Chef
       option :dockerfiles_path,
         :short => "-d PATH",
         :long => "--dockerfiles-path PATH",
-        :description => "Path to the directory where Docker contexts are kept",
-        :proc => Proc.new { |d| Chef::Config[:knife][:dockerfiles_path] = d }
+        :description => "Path to the directory where Docker contexts are kept"
 
       #
       # Run the plugin
@@ -98,8 +97,7 @@ class Chef
       # Set defaults for configuration values
       #
       def setup_config_defaults
-        Chef::Config[:knife][:dockerfiles_path] ||= File.join(Chef::Config[:chef_repo_path], "dockerfiles")
-        config[:dockerfiles_path] = Chef::Config[:knife][:dockerfiles_path]
+        config[:dockerfiles_path] ||= Chef::Config[:knife][:dockerfiles_path] || File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
 
         # Determine if we are running local or server mode
         case
