@@ -1,5 +1,8 @@
 # Knife Container Changelog
 
+## v0.2.3 (2014-09-19)
+* [GH-39] Fixed `--dockerfiles-path` parameter which did not properly accept input.
+
 ## v0.2.2 (2014-09-08)
 * [GH-34] Update gemspec to support Chef12.
 
