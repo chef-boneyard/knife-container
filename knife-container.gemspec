@@ -13,18 +13,19 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'http://github.com/opscode/knife-container'
   spec.license       = 'Apache 2.0'
 
-  spec.files         = `git ls-files -z`.split("\x0")
+  spec.files = %w(Rakefile README.md CONTRIBUTING.md) + Dir.glob("{lib,spec}/**/*", File::FNM_DOTMATCH).reject do |f|
+    File.directory?(f)
+  end
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
-  spec.require_paths = ["lib"]
+  spec.require_paths = ['lib']
 
   spec.required_ruby_version = '>= 2.0'
 
   spec.add_dependency 'chef', '>= 11.16.0'
-  spec.add_dependency 'docker-api', '~> 1.11.1'
+  spec.add_dependency 'docker-api', '~> 1.13'
 
   %w(rspec-core rspec-expectations rspec-mocks).each { |gem| spec.add_development_dependency gem, '~> 2.14.0' }
   spec.add_development_dependency 'bundler', '~> 1.3'
   spec.add_development_dependency 'rake', '~> 10.1.0'
-  spec.add_development_dependency 'pry'
 end

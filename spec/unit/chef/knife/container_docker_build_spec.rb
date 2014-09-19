@@ -25,7 +25,6 @@ describe Chef::Knife::ContainerDockerBuild do
     Chef::Knife::ContainerDockerBuild.new(argv).tap do |c|
       c.parse_options(argv)
       c.merge_configs
-      c.setup_config_defaults
     end
   end
 
@@ -38,41 +37,36 @@ describe Chef::Knife::ContainerDockerBuild do
     context 'by default' do
       let(:argv) { %w[ docker/demo ] }
 
-      it 'parses argv, run berkshelf, build the image and removes the artifacts' do
-        expect(knife).to receive(:setup_config_defaults)
+      it 'parses argv, builds the image and removes the artifacts' do
         expect(knife).to receive(:validate!)
-        expect(knife).not_to receive(:run_berks)
         expect(knife).not_to receive(:backup_secure)
-        expect(knife).to receive(:build_docker_image)
+        expect(knife).to receive(:validate_and_run_berkshelf)
+        expect(knife).to receive(:validate_and_run_docker)
         expect(knife).not_to receive(:restore_secure)
         expect(knife).to receive(:cleanup_artifacts)
         knife.run
-        expect(knife.config[:dockerfiles_path]).to eql("#{tempdir}/dockerfiles")
       end
     end
 
     context 'when argv is empty' do
       let(:argv) { %w[] }
 
-      it 'throws an error and prints a message' do
+      it 'errors out' do
         lambda do
-          expect(knife).to receive(:show_usage)
-          expect(knife.ui).to receive(:fatal)
+          expect(knife).to receive(:error_out)
           knife.run
-          expect(knife).to have_received(:exit).with(false)
         end
       end
     end
 
-    context '--berks is passed' do
-      let(:argv) { %w[ docker/demo --berks ] }
+    context '--no-berks is passed' do
+      let(:argv) { %w[ docker/demo --no-berks ] }
 
       it 'does not run berkshelf' do
-        expect(knife).to receive(:setup_config_defaults)
         expect(knife).to receive(:validate!)
-        expect(knife).to receive(:run_berks)
         expect(knife).not_to receive(:backup_secure)
-        expect(knife).to receive(:build_docker_image)
+        expect(knife).not_to receive(:validate_and_run_berkshelf)
+        expect(knife).to receive(:validate_and_run_docker)
         expect(knife).not_to receive(:restore_secure)
         expect(knife).to receive(:cleanup_artifacts)
         knife.run
@@ -83,11 +77,10 @@ describe Chef::Knife::ContainerDockerBuild do
       let(:argv) { %w[ docker/demo --no-cleanup ] }
 
       it 'does not clean up the artifacts' do
-        expect(knife).to receive(:setup_config_defaults)
         expect(knife).to receive(:validate!)
-        expect(knife).not_to receive(:run_berks)
         expect(knife).not_to receive(:backup_secure)
-        expect(knife).to receive(:build_docker_image)
+        expect(knife).to receive(:validate_and_run_berkshelf)
+        expect(knife).to receive(:validate_and_run_docker)
         expect(knife).not_to receive(:restore_secure)
         expect(knife).not_to receive(:cleanup_artifacts)
         knife.run
@@ -98,11 +91,10 @@ describe Chef::Knife::ContainerDockerBuild do
       let(:argv) { %w[ docker/demo --secure-dir /path/to/dir ] }
 
       it 'uses contents of specified directory for secure credentials during build' do
-        expect(knife).to receive(:setup_config_defaults)
         expect(knife).to receive(:validate!)
-        expect(knife).not_to receive(:run_berks)
         expect(knife).to receive(:backup_secure)
-        expect(knife).to receive(:build_docker_image)
+        expect(knife).to receive(:validate_and_run_berkshelf)
+        expect(knife).to receive(:validate_and_run_docker)
         expect(knife).to receive(:restore_secure)
         expect(knife).to receive(:cleanup_artifacts)
         knife.run
