@@ -44,6 +44,13 @@ class Chef
         long:         '--local-mode',
         description:  'Include and use a local chef repository to build the Docker image'
 
+      # This option to is prevent a breaking change. The --berksfile option has
+      # been deprecated.
+      option :old_generate_berksfile,
+        long:         '--berksfile',
+        boolean:      true,
+        default:      false
+
       option :generate_berksfile,
         short:        '-b',
         long:         '--generate-berksfile',
@@ -167,7 +174,14 @@ class Chef
 
       # Validate parameters and existing system state
       def validate
-        raise ValidationError, 'You must specify a Dockerfile name' if @name_args.length < 1
+        raise ValidationError,
+          'You must specify a Dockerfile name' if @name_args.length < 1
+        if config[:old_generate_berksfile]
+          ui.warn 'The `--berksfile` long-name option has been deprecated in ' \
+            'favor for `--generate-berksfile`. Please update your scripts ' \
+            'accordingly as the `--berksfile` option will be removed in v1.0.'
+          config[:generate_berksfile] = config[:old_generate_berksfile]
+        end
         setup_and_verify_docker
         setup_and_verify_berkshelf if config[:generate_berksfile]
         verify_docker_context
@@ -250,7 +264,7 @@ class Chef
       # Download the base Docker image and tag it with the image name
       def download_and_tag_base_image
         ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
-        name, tag = KnifeContainer::Plugins::Docker.parse_name(config[:base_image])
+        name, tag = config[:base_image].split(':')
         image = KnifeContainer::Plugins::Docker::Image.new(name: name, tag: tag)
         image.download
         ui.info("Tagging base image #{name} as #{@docker_context.name}")
