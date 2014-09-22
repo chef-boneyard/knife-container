@@ -29,27 +29,24 @@ class Chef
     class ContainerDockerRebase < Knife
       include Knife::ContainerDockerBase
 
-      attr_reader :docker_context
-
       banner 'knife container docker rebase REPOSITORY/IMAGE_NAME [options]'
 
       #
       # Read and validate the parameters then rebase the Docker image
       #
       def run
-        setup_config_defaults
         validate!
         rebase_docker_image
       end
 
+      private
+
       # Reads the input parameters and validates them.
       # Will exit if it encounters an error
       def validate!
-        super(@name_args)
+        super
       rescue ValidationError => e
-        show_usage
-        ui.fatal(e.message)
-        exit false
+        error_out(e.message)
       end
 
       def rebase_docker_image
