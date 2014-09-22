@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+require 'docker'
 require 'knife-container/exceptions'
 require 'knife-container/plugins/docker/image'
 require 'knife-container/plugins/docker/context'
@@ -22,16 +23,32 @@ require 'knife-container/plugins/docker/context'
 module KnifeContainer
   module Plugins
     class Docker
+      include KnifeContainer::Exceptions
 
+      #
+      # Validate to make sure that Docker is properly installed and configured.
+      #
       def self.validate!
         # Check to make sure we can communicate with the Docker API
         begin
           ::Docker.version
         rescue Excon::Errors::SocketError => e
-          raise KnifeContainer::Exceptions::ValidationError, 'Could not connect to Docker API. Please make sure your Docker daemon '\
+          raise ValidationError, 'Could not connect to Docker API. Please make sure your Docker daemon '\
           'process is running. If you are using boot2docker, please ensure that '\
           'your VM is up and started.'
         end
+      end
+
+      #
+      # Return the name with special characters replaced.
+      #
+      # @example
+      #   parse_name('registry.example.com:4000/my_image') #=> registry_example_com_4000/my_image
+      #
+      # @return [String]
+      #
+      def self.parse_name(name)
+        name.gsub(/[\.\:]/, '_')
       end
     end
   end
