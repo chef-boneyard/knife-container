@@ -21,22 +21,26 @@ require 'mkmf'
 module KnifeContainer
   module Plugins
     class Berkshelf
+      include KnifeContainer::Exceptions
 
+      #
+      # Validate that Berkshelf is properly installed and configured.
+      #
       def self.validate!
         case
         when !installed?
-          raise KnifeContainer::Exceptions::ValidationError, 'You must have Berkshelf installed to use the Berkshelf flag.'
+          raise ValidationError, 'You must have Berkshelf installed to use the Berkshelf flag.'
         end
       end
 
+      #
       # Determines whether Berkshelf is installed
       #
-      # @returns [TrueClass, FalseClass]
+      # @return [TrueClass, FalseClass]
+      #
       def self.installed?
         ! ::MakeMakefile.find_executable('berks').nil?
       end
-
-
     end
   end
 end
