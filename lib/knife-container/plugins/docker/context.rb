@@ -14,32 +14,83 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-require 'knife-container/plugins/docker/image'
+
+require 'knife-container/plugins/docker'
 require 'knife-container/exceptions'
 
 module KnifeContainer
   module Plugins
     class Docker
+      #
+      # This class is the representation of a Docker Context. It accepts two
+      # parameters:
+      #   1) Name of the Docker Context
+      #   2) The directory to create the context in
+      #
+      # An instance of this class can be fed into Plugins::Docker::Image and
+      # used to create an image based on this context.
+      #
       class Context
+        include KnifeContainer::Exceptions
 
         attr_accessor :name
         attr_accessor :dockerfiles_path
 
+        #
         # Create a new Dockerfile object to be manipulated
         #
-        # @param path [String] The fully-qualified path to the directory where
-        #   Docker Contexts are stored.
-        # @param name [String] The name of the Docker Image this Dockerfile is
-        #   responsible for maintaining.
+        # @param [String] name
+        #   The name of the Docker Image this Dockerfile is responsible for maintaining.
+        # @param [String] dockerfiles_path
+        #   The fully-qualified path to the directory where Docker Contexts are stored.
+        #
         def initialize(name, dockerfiles_path)
           @name = name
           @dockerfiles_path = dockerfiles_path
-          self.validate!
+          validate!
         end
 
-        # Determines whether the Dockerfile name the user provides is valid.
         #
-        # @return [TrueClass, FalseClass] whether the Dockerfile name is valid
+        # Returns the fully-qualified path to the docker context path
+        #
+        # @return [String]
+        #
+        def path
+          File.join(@dockerfiles_path, KnifeContainer::Plugins::Docker.parse_name(@name))
+        end
+
+        #
+        # Returns the full path to the Dockerfile
+        #
+        # @return [String]
+        #
+        def dockerfile
+          File.join(path, 'Dockerfile')
+        end
+
+        #
+        # Returns the name of the Base image as calcuated from the Dockerfile
+        #
+        # @return [String]
+        #
+        def base_image
+          base_image = nil
+          File.open(dockerfile).each do |line|
+            if line =~ /\# BASE (\S+)/
+              base_image = line.match(/\# BASE (\S+)/)[1]
+            end
+          end
+          raise PluginError, '[Docker] There is no base image specified in ' \
+            "`#{dockerfile}`." if base_image.nil?
+          base_image
+        end
+
+        private
+
+        #
+        # Validates the Docker Context object. Raises ValidationError if any
+        # errors are found.
+        #
         def validate!
           case
           when @name.match(/:([a-zA-Z0-9._\-]+)?$/) # Does it have a tag?
@@ -47,40 +98,6 @@ module KnifeContainer
           when @name.match(/^\w+:\/\//) # Does it include a protocol?
             raise ValidationError, 'Docker Context name may not start with a protocol'
           end
-        end
-
-        # The fully-qualified path to the docker context path
-        #
-        # @return [String] the full path
-        def path
-          File.join(@dockerfiles_path, parsed_name)
-        end
-
-        # Converts the Dockerfile name into something safe that can be used for a
-        # context folder name.
-        #
-        # @return [String] the name with special characters replaced with '_'
-        def parsed_name
-          @name.gsub(/[\.\:]/, '_')
-        end
-
-        # The full path to the Dockerfile
-        #
-        # @return [String] the full path to the Dockerfile
-        def dockerfile
-          File.join(path, 'Dockerfile')
-        end
-
-        # Pull the BASE image name from the Dockerfile
-        #
-        # @return [String] The BASE image value
-        def base_image
-          File.open(self.dockerfile).each do |line|
-            if line =~ /\# BASE (\S+)/
-              base_image = line.match(/\# BASE (\S+)/)[1]
-            end
-          end
-          base_image
         end
       end
     end
