@@ -16,47 +16,94 @@
 #
 require 'docker'
 require 'chef/json_compat'
+require 'knife-container/exceptions'
 
 module KnifeContainer
   module Plugins
     class Docker
+      #
+      # This class is a representation of a Docker Image. It is a wrapper around
+      # the native Docker::Image API.
+      #
       class Image
+        include KnifeContainer::Exceptions
+
         attr_reader :context
-        attr_reader :name
-        attr_reader :tag
+        attr_reader :image_name
+        attr_reader :image_tag
 
-        def initialize(args = {})
-          @context = args['context'] || nil
-          @name = args['name'] || @context.name || nil
-          @tag = args['tag'] || 'latest'
+        #
+        # @param [Hash] options
+        #
+        def initialize(options = {})
+          if options[:context].nil?
+            @image_name = options[:name]
+          else
+            @context = options[:context]
+            @image_name = @context.name
+          end
+          @image_tag = options[:tag] || 'latest'
 
-          raise 'Image name or ID was not provided' if @name.nil?
+          validate!
         end
 
+        #
+        # Communicates with the Docker API to download our image. Returns the
+        # Docker::Image object from the Docker API.
+        #
+        # @return [Docker::Image]
+        #
         def download
-          ::Docker::Image.create(fromImage: @name, tag: @tag)
+          ::Docker::Image.create(fromImage: @image_name, tag: @image_tag)
         end
 
-        def tag(name=@name, tag)
-          image = ::Docker::Image.get(name)
-          image.tag(repo: name, tag: tag)
+        #
+        # Tags the image with the provided tag
+        #
+        # @param [String] tag
+        #   The tag to apply to the image
+        #
+        def tag(tag)
+          image = ::Docker::Image.get(@image_name)
+          image.tag(repo: @image_name, tag: tag)
         end
 
+        #
+        # Builds our Docker image while printing the output from the Docker API
+        #
         def build
-          raise 'Build can only be used with a Docker Context' if @context.nil?
-          img = ::Docker::Image.build_from_dir(dir) do |output|
-            log = Chef::JSONCompat.new.parse(output)
+          raise PluginError, '[Docker] The build command can only be used with a Docker Context' if @context.nil?
+          img = ::Docker::Image.build_from_dir(@context.path) do |output|
+            log = Chef::JSONCompat.from_json(output)
             puts log['stream']
           end
         end
 
+        #
+        # Rebases our Docker Image on a new/fresh base image
+        #
         def rebase
-          raise 'Rebase can only be used with a Docker Context' if @context.nil?
-          base_image = self.class.new(base_image_name)
+          raise PluginError, '[Docker] The rebase command can only be used with a Docker Context' if @context.nil?
+
+          # Create an Image object for the context's base image
           base_image = ::Docker::Image.create(fromImage: @context.base_image)
-          current_image = ::Docker::Image.get(name: @name)
+
+          # Grab our current image by name and delete it
+          current_image = ::Docker::Image.get(@image_name)
           current_image.remove
-          base_image.tag(repo: @name, tag: @tag)
+
+          # Retag our base image with the name of our image
+          base_image.tag(repo: @image_name, tag: @image_tag)
+        end
+
+        #
+        # Validates the object.
+        #
+        def validate!
+          case
+          when @image_name.nil?
+            raise ValidationError, 'Docker image name or ID was not provided.'
+          end
         end
       end
     end
