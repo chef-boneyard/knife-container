@@ -19,6 +19,13 @@ to Docker CLI.
 * [FSE-201] Update knife-container to support ChefDK and Chef 12 libraries
 * [FSE-205] Add plugin architecture to manage 3rd party integrations with tools
 like Docker and Berkshelf.
+* [DEPRECATION] Use `--generate-berksfile` instead of `--berksfile` as the long
+options for `-b`.
+* [DEPRECATION] Use `knife[:base_docker_image]` instead of `knife[:docker_image]`
+for specifying a global base Docker image.
+
+## v0.2.4 (2014-09-19)
+* Fast followup fix to v0.2.3 - fix ``--dockerfiles-path` parameter for build.
 
 ## v0.2.3 (2014-09-19)
 * [GH-39] Fixed `--dockerfiles-path` parameter which did not properly accept input.

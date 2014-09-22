@@ -35,7 +35,7 @@ module TestHelpers
   end
 
   def fixtures_path
-    File.expand_path(File.dirname(__FILE__) + '/fixtures/')
+    File.expand_path(File::join(File.dirname(__FILE__), 'fixtures'))
   end
 
   def project_root
