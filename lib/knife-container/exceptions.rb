@@ -18,5 +18,6 @@
 module KnifeContainer
   module Exceptions
     class ValidationError < RuntimeError; end
+    class PluginError < RuntimeError; end
   end
 end

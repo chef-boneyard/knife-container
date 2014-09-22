@@ -107,11 +107,15 @@ class Chef
           berksfile.force = config[:force]
 
           # Run Berkshelf
-          case
-          when ::File.exist?("#{chef_repo}/zero.rb")
-            berksfile.vendor(::File.join(chef_repo, 'cookbooks'))
-          when ::File.exist?("#{chef_repo}/client.rb")
-            berksfile.upload
+          begin
+            case
+            when ::File.exist?("#{chef_repo}/zero.rb")
+              berksfile.vendor(::File.join(chef_repo, 'cookbooks'))
+            when ::File.exist?("#{chef_repo}/client.rb")
+              berksfile.upload
+            end
+          rescue PluginError => e
+            error_out(e.message)
           end
         else
           ui.info('Berkshelf steps will be ignored because a Berksfile does ' \
