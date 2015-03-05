@@ -42,6 +42,8 @@ describe Chef::Knife::ContainerDockerInit do
     Chef::Config[:trusted_certs_dir] = File.join(fixtures_path, '.chef', 'trusted_certs')
     Chef::Config[:validation_client_name] = 'masterchef'
     Chef::Config[:encrypted_data_bag_secret] = File.join(fixtures_path, '.chef', 'encrypted_data_bag_secret')
+    Chef::Config[:env_vars] = ['FOO=BAR']
+    Chef::Config[:env_files] = [File.join(fixtures_path, '.chef', 'env-list')]
   end
 
   def generator_context
@@ -146,6 +148,7 @@ describe Chef::Knife::ContainerDockerInit do
         expect(config[:data_bag_path]).to eq(File.join(tempdir, 'data_bags'))
         expect(config[:dockerfiles_path]).to eq(File.join(tempdir, 'dockerfiles'))
         expect(config[:run_list]).to eq([])
+        expect(config[:env_vars]).to eq(['FOO=BAR', 'SOMETHING=nothing'])
       end
 
       context 'when cookbook_path is an array' do
