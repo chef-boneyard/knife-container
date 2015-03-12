@@ -1,11 +1,11 @@
 # Knife Container
 [![Gem Version](https://badge.fury.io/rb/knife-container.png)](http://badge.fury.io/rb/knife-container)
-[![Build Status](https://travis-ci.org/opscode/knife-container.svg?branch=master)](https://travis-ci.org/opscode/knife-container)
+[![Build Status](https://travis-ci.org/chef/knife-container.svg?branch=master)](https://travis-ci.org/chef/knife-container)
 
 This is the official Chef plugin for Linux Containers. This plugin gives knife
 the ability to initialize and build Linux Containers.
 
-For full documentation, including examples, please check out [the docs site](http://docs.opscode.com/plugin_knife_container.html).
+For full documentation, including examples, please check out [the docs site](https://docs.chef.io/plugin_knife_container.html).
 
 ## Installation
 
