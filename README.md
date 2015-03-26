@@ -52,7 +52,7 @@ specified when you run `knife container docker init`. The default value is
 
 ### `knife[:berksfile_source]`
 Allows you to specify the source you wish to use in your generated Berksfiles.
-The default value is `https://supermarket.getchef.com`.
+The default value is `https://supermarket.chef.io`.
 
 ## Contributing
 Please read [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -62,8 +62,8 @@ Full License: [here](LICENSE)
 
 Knife-Container - a Knife plugin for chef-container
 
-Author:: Tom Duffield (<tom@getchef.com>)  
-Author:: Michael Goetz (<mpgoetz@getchef.com>)
+Author:: Tom Duffield (<tom@chef.io>)  
+Author:: Michael Goetz (<mpgoetz@chef.io>)
 
 Copyright:: Copyright (c) 2012-2014 Chef Software, Inc.  
 License:: Apache License, Version 2.0
