@@ -14,21 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-require 'mkmf'
 
-module KnifeContainer
-  module Helpers
-    module Berkshelf
+require 'spec_helper'
+require 'knife-container/plugins/docker'
 
-      #
-      # Determines whether Berkshelf is installed
-      #
-      # @returns [TrueClass, FalseClass]
-      #
-      def berks_installed?
-        ! ::MakeMakefile.find_executable('berks').nil?
+describe KnifeContainer::Plugins::Docker do
+
+  subject(:docker) { KnifeContainer::Plugins::Docker }
+
+  describe '.parse_name' do
+    it 'removes special characters from Docker Context name' do
+      {
+        'reg.example.com:1234/docker-demo' => 'reg_example_com_1234/docker-demo',
+        'reg.example.com/docker-demo' => 'reg_example_com/docker-demo',
+        'docker/demo' => 'docker/demo'
+      }.each do |input, output|
+        expect(docker.parse_name(input)).to eql(output)
       end
-
     end
   end
 end

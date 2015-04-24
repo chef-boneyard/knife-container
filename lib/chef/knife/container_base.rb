@@ -15,15 +15,22 @@
 # limitations under the License.
 #
 
-require 'test_helpers'
+require 'chef/knife'
 
-RSpec.configure do |c|
-  c.include TestHelpers
-  
-  c.expect_with :rspec do |config|
-    config.syntax = :expect
+class Chef
+  class Knife
+    #
+    # This module containers code that should be used for all KnifeContainer plugins
+    #
+    module ContainerBase
+      #
+      # Shows the usage, prints a fatal message and exits
+      #
+      def error_out(message)
+        show_usage
+        ui.fatal(message)
+        exit false
+      end
+    end
   end
-  c.filter_run :focus => true
-  c.run_all_when_everything_filtered = true
-  c.treat_symbols_as_metadata_keys_with_true_values = true
 end

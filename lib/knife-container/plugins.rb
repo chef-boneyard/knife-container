@@ -15,6 +15,5 @@
 # limitations under the License.
 #
 
-describe 'docker_container Ohai plugin' do
-   
-end
+require 'knife-container/plugins/berkshelf'
+require 'knife-container/plugins/docker'

@@ -15,15 +15,9 @@
 # limitations under the License.
 #
 
-require 'test_helpers'
-
-RSpec.configure do |c|
-  c.include TestHelpers
-  
-  c.expect_with :rspec do |config|
-    config.syntax = :expect
+module KnifeContainer
+  module Exceptions
+    class ValidationError < RuntimeError; end
+    class PluginError < RuntimeError; end
   end
-  c.filter_run :focus => true
-  c.run_all_when_everything_filtered = true
-  c.treat_symbols_as_metadata_keys_with_true_values = true
 end

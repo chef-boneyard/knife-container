@@ -14,22 +14,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-require 'knife-container/helpers/berkshelf'
-require 'knife-container/helpers/docker'
+require 'knife-container/plugins/berkshelf/berksfile'
+require 'knife-container/exceptions'
+require 'mkmf'
 
 module KnifeContainer
-  module Helpers
-    include KnifeContainer::Helpers::Berkshelf
-    include KnifeContainer::Helpers::Docker
+  module Plugins
+    class Berkshelf
+      include KnifeContainer::Exceptions
 
-    #
-    # Generates a short, but random UID for instances.
-    #
-    # @return [String]
-    #
-    def random_uid
-      require 'securerandom' unless defined?(SecureRandom)
-      SecureRandom.hex(3)
+      #
+      # Validate that Berkshelf is properly installed and configured.
+      #
+      def self.validate!
+        case
+        when !installed?
+          raise ValidationError, 'You must have Berkshelf installed to use the Berkshelf flag.'
+        end
+      end
+
+      #
+      # Determines whether Berkshelf is installed
+      #
+      # @return [TrueClass, FalseClass]
+      #
+      def self.installed?
+        ! ::MakeMakefile.find_executable('berks').nil?
+      end
     end
   end
 end

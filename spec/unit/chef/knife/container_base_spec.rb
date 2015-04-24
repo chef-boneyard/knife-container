@@ -15,15 +15,26 @@
 # limitations under the License.
 #
 
-require 'test_helpers'
+require 'spec_helper'
+require 'chef/knife/container_base'
 
-RSpec.configure do |c|
-  c.include TestHelpers
-  
-  c.expect_with :rspec do |config|
-    config.syntax = :expect
+class Chef
+  class Knife
+    class FakeCommand < Knife
+      include Chef::Knife::ContainerBase
+    end
   end
-  c.filter_run :focus => true
-  c.run_all_when_everything_filtered = true
-  c.treat_symbols_as_metadata_keys_with_true_values = true
+end
+
+describe Chef::Knife::ContainerBase do
+  let(:klass) { Chef::Knife::FakeCommand.new }
+
+  describe 'error_out' do
+    it 'prints system message and then exits' do
+      expect(klass).to receive(:show_usage)
+      expect(klass.ui).to receive(:fatal).with('DOOM')
+      expect(klass).to receive(:exit).with(false)
+      klass.error_out('DOOM')
+    end
+  end
 end

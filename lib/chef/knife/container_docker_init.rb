@@ -16,19 +16,27 @@
 #
 
 require 'chef/knife/container_docker_base'
+require 'knife-container/command'
 
 class Chef
   class Knife
+    #
+    # `knife container docker init` creates a new Docker context on your local
+    # workstation based on the parameters that you provide.
+    #
+    # @example Build a new Docker Context named 'myorg/myapp'
+    #   knife container docker init myorg/myapp
+    #
     class ContainerDockerInit < Knife
       include Knife::ContainerDockerBase
+      include KnifeContainer::Command
 
       banner 'knife container docker init REPOSITORY/IMAGE_NAME [options]'
 
       option :base_image,
         short:        '-f [REPOSITORY/]IMAGE[:TAG]',
         long:         '--from [REPOSITORY/]IMAGE[:TAG]',
-        description:  'The image to use as the base for your Docker image',
-        proc:         proc { |f| Chef::Config[:knife][:docker_image] = f }
+        description:  'The image to use as the base for your Docker image'
 
       option :run_list,
         short:        '-r RunlistItem,RunlistItem...,',
@@ -37,14 +45,25 @@ class Chef
         proc:         proc { |o| o.split(/[\s,]+/) }
 
       option :local_mode,
-        boolean:      true,
         short:        '-z',
         long:         '--local-mode',
-        description:  'Include and use a local chef repository to build the Docker image'
+        description:  'Include and use a local chef repository to build the Docker image',
+        boolean:      true
+
+      # This option to is prevent a breaking change. The --berksfile option has
+      # been deprecated.
+      option :old_generate_berksfile,
+        long:         '--berksfile',
+        boolean:      true,
+        default:      false,
+        proc:         proc { |b|
+          Chef::Log.warn '[DEPRECATED] --berksfile is deprecated. Use --generate-berksfile'
+          b
+        }
 
       option :generate_berksfile,
         short:        '-b',
-        long:         '--berksfile',
+        long:         '--generate-berksfile',
         description:  'Generate a Berksfile based on the run_list provided',
         boolean:      true,
         default:      false
@@ -75,10 +94,10 @@ class Chef
         long:         '--server-url URL',
         description:  'Chef Server URL'
 
-      option :force,
-        long:         '--force',
-        boolean:      true,
-        description:  'Will overwrite existing Docker Contexts'
+      option :berksfile_source,
+        long:         '--berksfile-source URL',
+        description:  'The source value for the Berksfile.',
+        proc:         proc { |url| Chef::Config[:knife][:berksfile_source] = url }
 
       option :cookbook_path,
         long:         '--cookbook-path PATH[:PATH]',
@@ -105,100 +124,88 @@ class Chef
         description:  'A colon-seperated path to look for data bags',
         proc:         proc { |o| o.split(':') }
 
-      option :dockerfiles_path,
-        short:        '-d PATH',
-        long:         '--dockerfiles-path PATH',
-        description:  'Path to the directory where Docker contexts are kept'
-
       #
-      # Run the plugin
+      # Read and validate the parameters then create the Docker Context
       #
       def run
-        set_config_defaults
-        validate
+        validate!
+        reconfigure
         setup_context
         chef_runner.converge
         download_and_tag_base_image
-        ui.info("\n#{ui.color("Context Created: #{config[:dockerfiles_path]}/#{dockerfile_name}", :magenta)}")
+        ui.info("\n#{ui.color("Context Created: #{docker_context_path}", :magenta)}")
       end
 
       #
-      # Validate parameters and existing system state
+      # Reconfigure the DockerInit configuration.
       #
-      def validate
-        if @name_args.length < 1
-          show_usage
-          ui.fatal('You must specify a Dockerfile name')
-          exit 1
-        end
+      def reconfigure
+        # Grab settings from knife.rb
+        config[:dockerfiles_path]   ||= default_dockerfiles_path
+        config[:base_image]         ||= default_base_image
+        config[:berksfile_source]   ||= default_berksfile_source
 
-        unless valid_dockerfile_name?(@name_args[0])
-          show_usage
-          ui.fatal('Your Dockerfile name cannot include a protocol or a tag.')
-          exit 1
-        end
-
-        if config[:generate_berksfile]
-          unless berks_installed?
-            show_usage
-            ui.fatal('You must have berkshelf installed to use the Berksfile flag.')
-            exit 1
-          end
-        end
-
-        # Check to see if the Docker context already exists.
-        if File.exist?(File.join(config[:dockerfiles_path], dockerfile_name))
-          if config[:force]
-            FileUtils.rm_rf(File.join(config[:dockerfiles_path], dockerfile_name))
-          else
-            show_usage
-            ui.fatal('The Docker Context you are trying to create already exists. ' \
-              'Please use the --force flag if you would like to re-create this context.')
-            exit 1
-          end
-        end
-      end
-
-      #
-      # Set default configuration values
-      #
-      def set_config_defaults
+        # Grab settings from Chef::Config
         %w(
-          chef_server_url
-          cookbook_path
-          node_path
-          role_path
-          environment_path
-          data_bag_path
           validation_key
           validation_client_name
           trusted_certs_dir
           encrypted_data_bag_secret
-        ).each do |var|
-          config[:"#{var}"] ||= Chef::Config[:"#{var}"]
+          chef_server_url
+          cookbook_path
+          role_path
+          node_path
+          environment_path
+          data_bag_path
+        ).each do |key|
+          config[key.to_sym]        ||= Chef::Config[key.to_sym]
         end
 
-        config[:base_image] ||= Chef::Config[:knife][:docker_image] || 'chef/ubuntu-12.04:latest'
+        # Set runlist to empty
+        config[:run_list]           ||= []
 
-        config[:berksfile_source] ||= Chef::Config[:knife][:berksfile_source] || 'https://supermarket.getchef.com'
+        # Support the deprecated `--berksfile` method
+        config[:generate_berksfile] ||= config[:old_generate_berksfile]
 
-        # if no tag is specified, use latest
-        unless config[:base_image] =~ /[a-zA-Z0-9\/]+:[a-zA-Z0-9.\-]+/
-          config[:base_image] = "#{config[:base_image]}:latest"
+        # Append 'latest' tag if a tag was omitted from the base image name
+        config[:base_image] += ':latest' unless config[:base_image].match(/[A-Za-z0-9_\/.:-]+:[A-Za-z0-9_-]+/)
+      end
+
+      private
+
+      #
+      # Validate parameters and existing system state
+      #
+      def validate!
+        super
+
+        # Validate Docker and Berkshelf installations
+        KnifeContainer::Plugins::Docker.validate!
+        KnifeContainer::Plugins::Berkshelf.validate! if config[:generate_berksfile]
+
+        # Show depreceation warning for knife[:docker_image]
+        ui.warn('[DEPRECATED] knife[:docker_image] has been deprecated. Please use ' \
+          'knife[:base_docker_image].') unless Chef::Config[:knife][:docker_image].nil?
+
+        # Check to see if a docker context already exists
+        if File.exist?(docker_context_path)
+          if config[:force]
+            FileUtils.rm_rf(docker_context_path)
+          else
+            raise ValidationError, 'The Docker Context you are trying to ' \
+              'create already exists. Please use the --force flag if you ' \
+              'would like to re-create this context.'
+          end
         end
-
-        config[:run_list] ||= []
-
-        config[:dockerfiles_path] ||= Chef::Config[:knife][:dockerfiles_path] || File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
-
-        config
+      rescue ValidationError => e
+        error_out(e.message)
       end
 
       #
       # Setup the generator context
       #
       def setup_context
-        generator_context.dockerfile_name = dockerfile_name
+        generator_context.dockerfile_name = docker_context_name
         generator_context.dockerfiles_path = config[:dockerfiles_path]
         generator_context.base_image = config[:base_image]
         generator_context.chef_client_mode = chef_client_mode
@@ -220,7 +227,7 @@ class Chef
       end
 
       #
-      # The name of the recipe to use
+      # Returns the name of the recipe to use for the Chef Generator
       #
       # @return [String]
       #
@@ -229,13 +236,19 @@ class Chef
       end
 
       #
-      # @return [String] the encoded name of the dockerfile
-      def dockerfile_name
-        parse_dockerfile_name(@name_args[0])
+      # Download the base Docker image and tag it with the image name
+      #
+      def download_and_tag_base_image
+        ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
+        name, tag = config[:base_image].split(':')
+        image = KnifeContainer::Plugins::Docker::Image.new(name: name, tag: tag)
+        image.download
+        ui.info("Tagging base image #{name} as #{docker_context_name}")
+        image.tag('latest')
       end
 
       #
-      # Generate the JSON object for our first-boot.json
+      # Generate and return the JSON object for our first-boot.json
       #
       # @return [String]
       #
@@ -255,17 +268,22 @@ class Chef
       end
 
       #
-      # Download the base Docker image and tag it with the image name
+      # Return the base Docker image to use
       #
-      def download_and_tag_base_image
-        ui.info("Downloading base image: #{config[:base_image]}. This process may take awhile...")
-        image_id = download_image(config[:base_image])
-        image_name = config[:base_image].split(':')[0]
-        ui.info("Tagging base image #{image_name} as #{@name_args[0]}")
-        tag_image(image_id, @name_args[0])
+      # @return [String]
+      #
+      def default_base_image
+        Chef::Config[:knife][:docker_image] || Chef::Config[:knife][:base_docker_image] || 'chef/ubuntu-12.04:latest'
       end
 
-
+      #
+      # Return the default URL to use in the Berksfile
+      #
+      # @return [String]
+      #
+      def default_berksfile_source
+        Chef::Config[:knife][:berksfile_source] || 'https://supermarket.getchef.com'
+      end
     end
   end
 end

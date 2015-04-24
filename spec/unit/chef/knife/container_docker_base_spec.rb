@@ -14,16 +14,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-require 'test_helpers'
-
-RSpec.configure do |c|
-  c.include TestHelpers
-  
-  c.expect_with :rspec do |config|
-    config.syntax = :expect
-  end
-  c.filter_run :focus => true
-  c.run_all_when_everything_filtered = true
-  c.treat_symbols_as_metadata_keys_with_true_values = true
-end

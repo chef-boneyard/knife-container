@@ -15,16 +15,80 @@
 # limitations under the License.
 #
 
-require 'chef/knife'
-require 'knife-container/command'
-require 'knife-container/helpers'
-require 'chef/json_compat'
+require 'chef/knife/container_base'
+require 'knife-container/plugins'
+require 'knife-container/exceptions'
 
 class Chef
   class Knife
     module ContainerDockerBase
-      include KnifeContainer::Command
-      include KnifeContainer::Helpers
+      include Knife::ContainerBase
+      include KnifeContainer::Exceptions
+
+      # :nodoc:
+      # Would prefer to do this in a rational way, but can't be done b/c of
+      # Mixlib::CLI's design :(
+      def self.included(includer)
+        includer.class_eval do
+
+          deps do
+            require 'chef/json_compat'
+          end
+
+          option :dockerfiles_path,
+            short:        '-d PATH',
+            long:         '--dockerfiles-path PATH',
+            description:  'Path to the directory where Docker contexts are kept.',
+            proc:         proc { |p| Chef::Config[:knife][:dockerfiles_path] = p }
+
+          option :force,
+            long:         '--force',
+            boolean:      true
+        end
+      end
+
+      #
+      # Reads the input parameters and validates them.
+      #
+      def validate!
+        raise ValidationError, 'You must specify a Dockerfile name' if @name_args.length < 1
+      end
+
+      #
+      # Returns the default Dockerfiles path
+      #
+      # @return [String]
+      #
+      def default_dockerfiles_path
+        Chef::Config[:knife][:dockerfiles_path] || ::File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
+      end
+
+      #
+      # Returns the parsed name of the Docker Context
+      #
+      # @return [String]
+      #
+      def docker_context_name
+        KnifeContainer::Plugins::Docker.parse_name(@name_args[0])
+      end
+
+      #
+      # Returns the path to the Docker Context
+      #
+      # @return [String]
+      #
+      def docker_context_path
+        ::File.join(config[:dockerfiles_path], docker_context_name)
+      end
+
+      #
+      # Returns the path to the chef-repo inside the Docker Context
+      #
+      # @return [String]
+      #
+      def chef_repo
+        ::File.join(docker_context_path, 'chef')
+      end
     end
   end
 end
