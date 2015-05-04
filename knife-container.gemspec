@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'chef', '>= 11.16.0'
   spec.add_dependency 'docker-api', '~> 1.11.1'
+  spec.add_dependency 'json', '>= 1.4.4', '<= 1.8.2'
 
   %w(rspec-core rspec-expectations rspec-mocks).each { |gem| spec.add_development_dependency gem, '~> 2.14.0' }
   spec.add_development_dependency 'bundler', '~> 1.3'
