@@ -110,6 +110,16 @@ class Chef
         long:         '--dockerfiles-path PATH',
         description:  'Path to the directory where Docker contexts are kept'
 
+      option :env_vars,
+        long:         '--env KEY=VALUE',
+        description:  'Set environment variables',
+        proc:         proc { |o| Chef::Config[:env_vars] ||= []; Chef::Config[:env_vars].push(o) }
+
+      option :env_files,
+        long:         '--env-files PATH[:PATH]',
+        description:  'Read in a line delimited file of environment variables',
+        proc:         proc { |o| o.split(':') }
+
       #
       # Run the plugin
       #
@@ -174,6 +184,8 @@ class Chef
           validation_client_name
           trusted_certs_dir
           encrypted_data_bag_secret
+          env_vars
+          env_files
         ).each do |var|
           config[:"#{var}"] ||= Chef::Config[:"#{var}"]
         end
@@ -190,6 +202,13 @@ class Chef
         config[:run_list] ||= []
 
         config[:dockerfiles_path] ||= Chef::Config[:knife][:dockerfiles_path] || File.join(Chef::Config[:chef_repo_path], 'dockerfiles')
+
+        config[:env_vars] ||= []
+        config[:env_files].each do |file|
+          File.open(file).each do |line|
+            config[:env_vars].push(line.strip!)
+          end
+        end unless config[:env_files].nil?
 
         config
       end
@@ -217,6 +236,7 @@ class Chef
         generator_context.generate_berksfile = config[:generate_berksfile]
         generator_context.berksfile_source = config[:berksfile_source]
         generator_context.include_credentials = config[:include_credentials]
+        generator_context.env_vars = config[:env_vars]
       end
 
       #
